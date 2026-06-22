@@ -3,76 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Quilla House POS</title>
+    <title id="app-title">Quilla House POS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+      import { getDatabase, ref, set, get, onValue, push } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+      window._fbImports = { initializeApp, getDatabase, ref, set, get, onValue, push };
+    </script>
     <style>
         * { -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; overscroll-behavior: none; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-main, #f1f5f9); overscroll-behavior: none; }
         
-        /* Bottom nav safe area */
+        /* CSS Variables for theming */
+        :root {
+            --accent: #f59e0b;
+            --accent-dark: #d97706;
+            --bg-main: #f1f5f9;
+            --brand-name: 'QUILLA HOUSE';
+        }
+
         .pb-safe { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
         .bottom-nav { bottom: env(safe-area-inset-bottom, 0); }
-
-        /* Smooth transitions */
         .screen { transition: opacity 0.2s ease; }
         .screen.hidden { display: none !important; }
-
-        /* Bottom sheet */
-        .sheet-backdrop { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        .sheet-backdrop { background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); }
         .sheet { transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
         .sheet.open { transform: translateY(0); }
-
-        /* PIN dots */
-        .pin-dot { width: 18px; height: 18px; border-radius: 50%; background: #334155; transition: all 0.15s; }
-        .pin-dot.filled { background: #f59e0b; transform: scale(1.2); }
-
-        /* Table card states */
+        .pin-dot { width: 18px; height: 18px; border-radius: 50%; background: #cbd5e1; transition: all 0.15s; }
+        .pin-dot.filled { background: var(--accent, #f59e0b); transform: scale(1.2); }
         .table-free  { background: #f0fdf4; border-color: #86efac; }
         .table-busy  { background: #fff1f2; border-color: #fca5a5; }
-        .table-check { background: #fefce8; border-color: #fde047; }
-
-        /* Category pill active */
-        .cat-pill-active { background: #f59e0b; color: white; border-color: #f59e0b; }
-
-        /* Cart item */
+        .cat-pill-active { background: var(--accent, #f59e0b); color: white; border-color: var(--accent, #f59e0b); }
         .cart-item { animation: slideIn 0.2s ease; }
         @keyframes slideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-
-        /* Scrollbar hidden for category strip */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Toast */
         #toast-container { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+
+        /* Light theme */
+        .bg-slate-900 { background-color: #f1f5f9 !important; }
+        .bg-slate-800 { background-color: #ffffff !important; }
+        .bg-slate-700 { background-color: #e2e8f0 !important; }
+        .border-slate-800 { border-color: #e2e8f0 !important; }
+        .border-slate-700 { border-color: #cbd5e1 !important; }
+        .text-slate-100 { color: #0f172a !important; }
+        .text-white { color: #0f172a !important; }
+        .text-slate-400 { color: #64748b !important; }
+        .text-slate-500 { color: #94a3b8 !important; }
+        .text-slate-300 { color: #475569 !important; }
+        .text-slate-600 { color: #94a3b8 !important; }
+        .bg-amber-500 .text-white, button.bg-amber-500, .bg-emerald-500, .bg-rose-600 { color: #ffffff !important; }
+        header.bg-slate-900 { background-color: #ffffff !important; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        nav.bg-slate-900 { background-color: #ffffff !important; box-shadow: 0 -1px 3px rgba(0,0,0,0.06); }
+        .sheet.bg-slate-900 { background-color: #ffffff !important; }
+        input, textarea, select { color: #0f172a !important; }
+        input::placeholder, textarea::placeholder { color: #94a3b8 !important; }
+        .bg-slate-800.border { background-color: #ffffff !important; border-color: #e2e8f0 !important; }
+        #cart-items-list .bg-slate-800 { background-color: #f8fafc !important; }
+        .bg-slate-700.rounded-2xl { background-color: #f1f5f9 !important; }
+        .from-slate-800.to-slate-700 { background: linear-gradient(135deg, #f8fafc, #f1f5f9) !important; }
+        #screen-login { background: var(--login-bg, linear-gradient(160deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)) !important; }
+        #screen-login .text-white { color: #ffffff !important; }
+        #screen-login .text-slate-400 { color: #94a3b8 !important; }
+        #screen-login .bg-slate-800 { background-color: #1e293b !important; }
+        #screen-login .border-slate-700 { border-color: #334155 !important; }
+        #screen-pin .text-white { color: #ffffff !important; }
+        #screen-pin .bg-slate-800 { background-color: #1e293b !important; }
+        #page-ventas, #page-cierre, #page-admin { background-color: #f1f5f9 !important; }
+
+        /* Firebase indicator */
+        .fb-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
+        .fb-dot.connected { background:#22c55e; }
+        .fb-dot.disconnected { background:#f59e0b; animation: pulse 1s infinite; }
+        .fb-dot.error { background:#ef4444; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        /* Admin tabs */
+        .admin-tab { padding: 0.6rem 1rem; border-radius: 0.75rem; font-weight: 700; font-size: 0.75rem; transition: all 0.15s; cursor: pointer; border: 2px solid transparent; }
+        .admin-tab.active { background: var(--accent,#f59e0b); color: #fff; }
+        .admin-tab:not(.active) { background: #e2e8f0; color: #64748b; }
+
+        /* Color swatch */
+        .color-swatch { width:32px; height:32px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:all 0.15s; }
+        .color-swatch.selected { border-color: #0f172a; transform: scale(1.2); }
+
+        /* Logo upload area */
+        .logo-drop { border: 2px dashed #cbd5e1; border-radius: 1rem; padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .logo-drop:hover { border-color: var(--accent,#f59e0b); background: rgba(245,158,11,0.05); }
 
         @media print {
             body * { visibility: hidden; }
             #printArea, #printArea * { visibility: visible; }
             #printArea { position: absolute; left: 0; top: 0; width: 100%; background: white !important; color: black !important; }
         }
+
+        /* Sync badge */
+        #sync-badge { position:fixed; top:60px; right:12px; z-index:100; font-size:0.65rem; font-weight:700; padding:2px 8px; border-radius:99px; display:none; }
     </style>
 </head>
 <body class="text-slate-100 min-h-screen select-none">
 
-<!-- ═══════════════════════════════════════════════════════
-     SCREEN 1: PROFILE SELECTOR
-═══════════════════════════════════════════════════════ -->
-<div id="screen-login" class="screen fixed inset-0 flex flex-col items-center justify-center p-5" style="background: linear-gradient(160deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);">
-    <!-- Logo area -->
-    <div class="text-center mb-10">
-        <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-amber-500 flex items-center justify-center shadow-2xl shadow-amber-500/40">
-            <span class="text-3xl">🍔</span>
-        </div>
-        <h1 class="text-3xl font-black text-white tracking-tight">QUILLA HOUSE</h1>
-        <p class="text-amber-400 text-sm font-bold mt-1 uppercase tracking-widest">#ElFoodTrailerDelVerdaderoSabor</p>
-    </div>
+<!-- Sync badge -->
+<div id="sync-badge"></div>
 
-    <!-- Profile cards -->
+<!-- ═══════ SCREEN 1: PROFILE SELECTOR ═══════ -->
+<div id="screen-login" class="screen fixed inset-0 flex flex-col items-center justify-center p-5">
+    <div class="text-center mb-10" id="login-brand">
+        <div class="w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center shadow-2xl" id="login-logo-wrap" style="background: var(--accent,#f59e0b);">
+            <span class="text-3xl" id="login-logo-emoji">🍔</span>
+        </div>
+        <h1 class="text-3xl font-black text-white tracking-tight" id="login-brand-name">QUILLA HOUSE</h1>
+        <p class="text-amber-400 text-sm font-bold mt-1 uppercase tracking-widest" id="login-tagline">#ElFoodTrailerDelVerdaderoSabor</p>
+    </div>
     <div class="w-full max-w-sm space-y-3">
         <p class="text-slate-400 text-center text-sm font-semibold mb-5">¿Quién eres hoy?</p>
-
         <button onclick="selectProfile('rincon')" class="w-full bg-slate-800 hover:bg-slate-700 border-2 border-slate-700 hover:border-rose-500 p-5 rounded-2xl flex items-center gap-4 transition-all active:scale-95">
             <div class="w-14 h-14 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center flex-shrink-0">
                 <i class="fa-solid fa-store text-rose-400 text-2xl"></i>
@@ -83,7 +130,6 @@
             </div>
             <i class="fa-solid fa-chevron-right text-slate-600 ml-auto"></i>
         </button>
-
         <button onclick="selectProfile('arboleda')" class="w-full bg-slate-800 hover:bg-slate-700 border-2 border-slate-700 hover:border-teal-500 p-5 rounded-2xl flex items-center gap-4 transition-all active:scale-95">
             <div class="w-14 h-14 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center flex-shrink-0">
                 <i class="fa-solid fa-truck text-teal-400 text-2xl"></i>
@@ -94,7 +140,6 @@
             </div>
             <i class="fa-solid fa-chevron-right text-slate-600 ml-auto"></i>
         </button>
-
         <button onclick="selectProfile('admin')" class="w-full bg-slate-800 hover:bg-slate-700 border-2 border-slate-700 hover:border-amber-500 p-5 rounded-2xl flex items-center gap-4 transition-all active:scale-95">
             <div class="w-14 h-14 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
                 <i class="fa-solid fa-chart-pie text-amber-400 text-2xl"></i>
@@ -106,31 +151,29 @@
             <i class="fa-solid fa-chevron-right text-slate-600 ml-auto"></i>
         </button>
     </div>
+    <!-- Firebase status -->
+    <div class="mt-8 flex items-center gap-2">
+        <span class="fb-dot disconnected" id="fb-status-dot"></span>
+        <span class="text-slate-500 text-xs font-semibold" id="fb-status-text">Sin Firebase — modo local</span>
+    </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     PIN PAD OVERLAY
-═══════════════════════════════════════════════════════ -->
+<!-- ═══════ PIN PAD ═══════ -->
 <div id="screen-pin" class="screen hidden fixed inset-0 flex flex-col items-center justify-center p-6 z-50" style="background: rgba(0,0,0,0.95); backdrop-filter: blur(20px);">
     <button onclick="cancelPin()" class="absolute top-6 left-6 text-slate-400 hover:text-white p-2">
         <i class="fa-solid fa-arrow-left text-xl"></i>
     </button>
-
     <div class="text-center mb-8">
         <div id="pin-profile-icon" class="w-16 h-16 mx-auto mb-3 rounded-2xl flex items-center justify-center text-2xl"></div>
         <h2 class="text-2xl font-black text-white" id="pin-profile-name">PIN</h2>
         <p class="text-slate-400 text-sm mt-1">Ingresa tu PIN de 4 dígitos</p>
     </div>
-
-    <!-- PIN dots display -->
     <div class="flex gap-4 mb-10">
         <div id="dot-0" class="pin-dot"></div>
         <div id="dot-1" class="pin-dot"></div>
         <div id="dot-2" class="pin-dot"></div>
         <div id="dot-3" class="pin-dot"></div>
     </div>
-
-    <!-- Numpad -->
     <div class="grid grid-cols-3 gap-4 w-full max-w-xs">
         <button onclick="pinKey('1')" class="h-20 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-2xl text-2xl font-bold text-white transition-all active:scale-95">1</button>
         <button onclick="pinKey('2')" class="h-20 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-2xl text-2xl font-bold text-white transition-all active:scale-95">2</button>
@@ -147,23 +190,23 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     MAIN APP WRAPPER (Visible after login)
-═══════════════════════════════════════════════════════ -->
+<!-- ═══════ MAIN APP WRAPPER ═══════ -->
 <div id="app-wrapper" class="hidden">
 
-    <!-- Top Header bar -->
+    <!-- Header -->
     <header class="fixed top-0 left-0 right-0 z-40 bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center">
-                <span class="text-lg">🍔</span>
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden" id="header-logo-wrap" style="background: var(--accent,#f59e0b);">
+                <img id="header-logo-img" class="w-full h-full object-cover hidden" alt="Logo">
+                <span class="text-lg" id="header-logo-emoji">🍔</span>
             </div>
             <div>
-                <p class="text-white font-black text-sm leading-none">QUILLA HOUSE</p>
+                <p class="text-white font-black text-sm leading-none" id="header-brand-name">QUILLA HOUSE</p>
                 <p class="text-xs font-semibold mt-0.5" id="header-sede-badge">—</p>
             </div>
         </div>
         <div class="flex items-center gap-2">
+            <span class="fb-dot disconnected" id="fb-dot-header" title="Estado Firebase"></span>
             <button id="btn-cierre-header" onclick="openCierreModal()" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition active:scale-95">
                 <i class="fa-solid fa-calculator mr-1"></i>Cierre
             </button>
@@ -173,34 +216,21 @@
         </div>
     </header>
 
-    <!-- ─── PAGE: VENTAS ─── -->
+    <!-- PAGE: VENTAS -->
     <div id="page-ventas" class="page hidden pt-16 pb-safe min-h-screen bg-slate-900">
-
-        <!-- STEP 1: SALÓN VIEW (Tables/Slots) -->
         <div id="salon-view">
-            <!-- Tab bar: Mesas / Domicilios / Llevar -->
             <div class="px-4 pt-4 pb-3 flex gap-2 overflow-x-auto no-scrollbar">
                 <button onclick="setHubTab('mesas')" id="tab-mesas" class="flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-bold border-2 border-amber-500 bg-amber-500 text-white transition">🪑 Mesas</button>
                 <button onclick="setHubTab('domicilios')" id="tab-domicilios" class="flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-bold border-2 border-slate-700 text-slate-400 transition">🛵 Domicilios</button>
                 <button onclick="setHubTab('llevar')" id="tab-llevar" class="flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-bold border-2 border-slate-700 text-slate-400 transition">🛍️ Para Llevar</button>
             </div>
-
-            <!-- Legend -->
             <div class="px-4 flex gap-3 text-xs text-slate-500 mb-3">
                 <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>Libre</span>
                 <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>Ocupada</span>
-                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-yellow-400 inline-block"></span>Cuenta Pedida</span>
             </div>
-
-            <!-- Slots grid -->
-            <div class="px-4 grid grid-cols-2 gap-3" id="slots-grid">
-                <!-- rendered by JS -->
-            </div>
+            <div class="px-4 grid grid-cols-2 gap-3" id="slots-grid"></div>
         </div>
-
-        <!-- STEP 2: MENU VIEW (product selection for a slot) -->
         <div id="menu-view" class="hidden">
-            <!-- Back bar with slot name -->
             <div class="px-4 pt-4 pb-3 flex items-center gap-3">
                 <button onclick="goBackToSalon()" class="w-12 h-12 bg-slate-800 hover:bg-slate-700 rounded-2xl flex items-center justify-center transition active:scale-95">
                     <i class="fa-solid fa-arrow-left text-white text-lg"></i>
@@ -209,56 +239,37 @@
                     <p class="text-slate-400 text-xs font-semibold">Pedido activo</p>
                     <h2 class="text-xl font-black text-white" id="menu-slot-title">Mesa 1</h2>
                 </div>
-                <!-- Cart badge button -->
                 <button onclick="openCartSheet()" class="relative bg-amber-500 hover:bg-amber-400 text-white rounded-2xl px-4 py-3 flex items-center gap-2 font-bold transition active:scale-95">
                     <i class="fa-solid fa-bag-shopping"></i>
                     <span id="cart-total-mini">$0</span>
                     <span id="cart-badge" class="hidden absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white text-xs font-black rounded-full flex items-center justify-center">0</span>
                 </button>
             </div>
-
-            <!-- Search -->
             <div class="px-4 mb-3">
                 <div class="bg-slate-800 rounded-2xl flex items-center gap-3 px-4 py-3">
                     <i class="fa-solid fa-magnifying-glass text-slate-500"></i>
                     <input id="search-input" oninput="filterProducts(this.value)" type="text" placeholder="Buscar plato..." class="bg-transparent text-white placeholder-slate-500 flex-1 text-sm outline-none font-medium">
                 </div>
             </div>
-
-            <!-- Category pills -->
-            <div class="flex gap-2 px-4 overflow-x-auto no-scrollbar pb-2">
-                <!-- rendered by JS -->
-            </div>
-
-            <!-- Products list -->
-            <div class="px-4 mt-3 space-y-2 pb-4" id="products-list">
-                <!-- rendered by JS -->
-            </div>
+            <div class="flex gap-2 px-4 overflow-x-auto no-scrollbar pb-2"></div>
+            <div class="px-4 mt-3 space-y-2 pb-4" id="products-list"></div>
         </div>
     </div>
 
-    <!-- ─── PAGE: CIERRE (Arqueo de Caja) ─── -->
+    <!-- PAGE: CIERRE -->
     <div id="page-cierre" class="page hidden pt-16 pb-safe min-h-screen bg-slate-900">
         <div class="px-4 pt-5 space-y-4">
             <h2 class="text-2xl font-black text-white">Arqueo de Caja</h2>
             <p class="text-slate-400 text-sm -mt-2" id="cierre-sede-label">Cierre del turno</p>
-
-            <!-- Total del día -->
             <div class="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-3xl p-6 shadow-2xl shadow-emerald-900/50">
                 <p class="text-emerald-200 text-sm font-semibold uppercase tracking-widest">Total Recaudado Hoy</p>
                 <p class="text-4xl font-black text-white mt-1" id="cierre-total-dia">$0</p>
                 <p class="text-emerald-300 text-sm mt-2" id="cierre-facturas-count">0 transacciones</p>
             </div>
-
-            <!-- Desglose por método -->
             <div class="bg-slate-800 rounded-3xl p-5 space-y-3">
                 <h3 class="text-sm font-black text-slate-300 uppercase tracking-wider">Por Método de Pago</h3>
-                <div id="cierre-pay-breakdown" class="space-y-2">
-                    <!-- rendered by JS -->
-                </div>
+                <div id="cierre-pay-breakdown" class="space-y-2"></div>
             </div>
-
-            <!-- Formulario cierre -->
             <div class="bg-slate-800 rounded-3xl p-5 space-y-4">
                 <h3 class="text-sm font-black text-slate-300 uppercase tracking-wider">Verificación de Efectivo</h3>
                 <div>
@@ -280,94 +291,100 @@
                     <textarea id="cierre-obs" rows="3" placeholder="Notas del turno..." class="w-full bg-slate-700 border-2 border-slate-600 focus:border-amber-500 rounded-2xl py-4 px-5 text-base font-medium text-white outline-none transition placeholder-slate-600 resize-none"></textarea>
                 </div>
             </div>
-
-            <!-- Action button -->
             <button onclick="ejecutarArqueo()" class="w-full bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white font-black text-lg py-5 rounded-3xl shadow-2xl shadow-rose-900/50 transition-all active:scale-98 flex items-center justify-center gap-3">
-                <i class="fa-solid fa-calculator"></i>
-                EJECUTAR ARQUEO Y CIERRE DE CAJA
+                <i class="fa-solid fa-calculator"></i>EJECUTAR ARQUEO Y CIERRE DE CAJA
             </button>
         </div>
     </div>
 
-    <!-- ─── PAGE: ADMIN ─── -->
+    <!-- PAGE: ADMIN -->
     <div id="page-admin" class="page hidden pt-16 pb-safe min-h-screen bg-slate-900">
         <div class="px-4 pt-5 space-y-4">
-            <h2 class="text-2xl font-black text-white">Panel Admin</h2>
-
-            <!-- Date filter -->
-            <div class="bg-slate-800 rounded-2xl p-4 space-y-3">
-                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Filtro de período</p>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="adminFilter('today')" id="af-today" class="py-3 rounded-2xl text-sm font-bold bg-amber-500 text-white transition">Hoy</button>
-                    <button onclick="adminFilter('yesterday')" id="af-yesterday" class="py-3 rounded-2xl text-sm font-bold bg-slate-700 text-slate-300 transition">Ayer</button>
-                    <button onclick="adminFilter('week')" id="af-week" class="py-3 rounded-2xl text-sm font-bold bg-slate-700 text-slate-300 transition">7 Días</button>
-                    <button onclick="adminFilter('all')" id="af-all" class="py-3 rounded-2xl text-sm font-bold bg-slate-700 text-slate-300 transition">Todo</button>
-                </div>
-                <!-- Sede filter -->
-                <select onchange="renderAdminDashboard()" id="admin-sede-filter" class="w-full bg-slate-700 border-2 border-slate-600 text-white rounded-2xl py-3 px-4 text-sm font-bold outline-none">
-                    <option value="all">Todas las Sedes</option>
-                    <option value="1">Arboleda (Food Trailer)</option>
-                    <option value="2">Rincón de Piedra</option>
-                </select>
-            </div>
-
-            <!-- KPI Cards -->
-            <div class="grid grid-cols-1 gap-3">
-                <div class="bg-gradient-to-br from-slate-800 to-slate-700 rounded-3xl p-5 flex items-center justify-between">
-                    <div>
-                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">VENTAS TOTALES</p>
-                        <p class="text-3xl font-black text-white mt-1" id="admin-stat-total">$0</p>
-                        <p class="text-slate-400 text-sm mt-1" id="admin-stat-periodo">Hoy</p>
-                    </div>
-                    <div class="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center">
-                        <i class="fa-solid fa-sack-dollar text-amber-400 text-xl"></i>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-teal-900/50 border border-teal-800/50 rounded-3xl p-4">
-                        <p class="text-teal-400 text-xs font-bold">🚛 Arboleda</p>
-                        <p class="text-xl font-black text-white mt-1" id="admin-arboleda-total">$0</p>
-                    </div>
-                    <div class="bg-rose-900/50 border border-rose-800/50 rounded-3xl p-4">
-                        <p class="text-rose-400 text-xs font-bold">🏠 Rincón</p>
-                        <p class="text-xl font-black text-white mt-1" id="admin-rincon-total">$0</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-slate-800 rounded-3xl p-4">
-                        <p class="text-slate-400 text-xs font-bold">FACTURAS</p>
-                        <p class="text-2xl font-black text-white mt-1" id="admin-invoice-count">0</p>
-                    </div>
-                    <div class="bg-slate-800 rounded-3xl p-4">
-                        <p class="text-slate-400 text-xs font-bold">TICKET PROM.</p>
-                        <p class="text-2xl font-black text-white mt-1" id="admin-avg-ticket">$0</p>
-                    </div>
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black text-white">Panel Admin</h2>
+                <div class="flex items-center gap-1.5 bg-slate-800 rounded-xl px-3 py-1.5">
+                    <span class="fb-dot disconnected" id="fb-dot-admin"></span>
+                    <span class="text-xs font-bold text-slate-400" id="fb-text-admin">Local</span>
                 </div>
             </div>
 
-            <!-- Payment breakdown -->
-            <div class="bg-slate-800 rounded-3xl p-5 space-y-3">
-                <h3 class="text-sm font-black text-slate-300 uppercase tracking-wider">Métodos de Pago</h3>
-                <div id="admin-pay-breakdown" class="space-y-2"></div>
+            <!-- Admin Sub-tabs -->
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                <button class="admin-tab active flex-shrink-0" id="atab-reportes" onclick="switchAdminTab('reportes')">📊 Reportes</button>
+                <button class="admin-tab flex-shrink-0" id="atab-menu" onclick="switchAdminTab('menu')">🍔 Menú</button>
+                <button class="admin-tab flex-shrink-0" id="atab-mesas" onclick="switchAdminTab('mesas')">🪑 Mesas</button>
+                <button class="admin-tab flex-shrink-0" id="atab-pagos" onclick="switchAdminTab('pagos')">💳 Pagos</button>
+                <button class="admin-tab flex-shrink-0" id="atab-apariencia" onclick="switchAdminTab('apariencia')">🎨 Apariencia</button>
+                <button class="admin-tab flex-shrink-0" id="atab-firebase" onclick="switchAdminTab('firebase')">🔥 Firebase</button>
             </div>
 
-            <!-- Sales history list -->
-            <div class="bg-slate-800 rounded-3xl p-5 space-y-3">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-sm font-black text-slate-300 uppercase tracking-wider">Historial</h3>
-                    <button onclick="exportCSV()" class="bg-emerald-700 text-emerald-200 text-xs font-bold px-3 py-2 rounded-xl">
-                        <i class="fa-solid fa-file-csv mr-1"></i>CSV
-                    </button>
+            <!-- TAB: REPORTES -->
+            <div id="admin-panel-reportes" class="space-y-4">
+                <div class="bg-slate-800 rounded-2xl p-4 space-y-3">
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Filtro de período</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="adminFilter('today')" id="af-today" class="py-3 rounded-2xl text-sm font-bold bg-amber-500 text-white transition">Hoy</button>
+                        <button onclick="adminFilter('yesterday')" id="af-yesterday" class="py-3 rounded-2xl text-sm font-bold bg-slate-700 text-slate-300 transition">Ayer</button>
+                        <button onclick="adminFilter('week')" id="af-week" class="py-3 rounded-2xl text-sm font-bold bg-slate-700 text-slate-300 transition">7 Días</button>
+                        <button onclick="adminFilter('all')" id="af-all" class="py-3 rounded-2xl text-sm font-bold bg-slate-700 text-slate-300 transition">Todo</button>
+                    </div>
+                    <select onchange="renderAdminDashboard()" id="admin-sede-filter" class="w-full bg-slate-700 border-2 border-slate-600 text-white rounded-2xl py-3 px-4 text-sm font-bold outline-none">
+                        <option value="all">Todas las Sedes</option>
+                        <option value="1">Arboleda (Food Trailer)</option>
+                        <option value="2">Rincón de Piedra</option>
+                    </select>
                 </div>
-                <div id="admin-history-list" class="space-y-2"></div>
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="bg-gradient-to-br from-slate-800 to-slate-700 rounded-3xl p-5 flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">VENTAS TOTALES</p>
+                            <p class="text-3xl font-black text-white mt-1" id="admin-stat-total">$0</p>
+                            <p class="text-slate-400 text-sm mt-1" id="admin-stat-periodo">Hoy</p>
+                        </div>
+                        <div class="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center">
+                            <i class="fa-solid fa-sack-dollar text-amber-400 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-teal-900/50 border border-teal-800/50 rounded-3xl p-4">
+                            <p class="text-teal-400 text-xs font-bold">🚛 Arboleda</p>
+                            <p class="text-xl font-black text-white mt-1" id="admin-arboleda-total">$0</p>
+                        </div>
+                        <div class="bg-rose-900/50 border border-rose-800/50 rounded-3xl p-4">
+                            <p class="text-rose-400 text-xs font-bold">🏠 Rincón</p>
+                            <p class="text-xl font-black text-white mt-1" id="admin-rincon-total">$0</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-slate-800 rounded-3xl p-4">
+                            <p class="text-slate-400 text-xs font-bold">FACTURAS</p>
+                            <p class="text-2xl font-black text-white mt-1" id="admin-invoice-count">0</p>
+                        </div>
+                        <div class="bg-slate-800 rounded-3xl p-4">
+                            <p class="text-slate-400 text-xs font-bold">TICKET PROM.</p>
+                            <p class="text-2xl font-black text-white mt-1" id="admin-avg-ticket">$0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-800 rounded-3xl p-5 space-y-3">
+                    <h3 class="text-sm font-black text-slate-300 uppercase tracking-wider">Métodos de Pago</h3>
+                    <div id="admin-pay-breakdown" class="space-y-2"></div>
+                </div>
+                <div class="bg-slate-800 rounded-3xl p-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-black text-slate-300 uppercase tracking-wider">Historial</h3>
+                        <button onclick="exportCSV()" class="bg-emerald-700 text-emerald-200 text-xs font-bold px-3 py-2 rounded-xl">
+                            <i class="fa-solid fa-file-csv mr-1"></i>CSV
+                        </button>
+                    </div>
+                    <div id="admin-history-list" class="space-y-2"></div>
+                </div>
             </div>
 
-            <!-- Config section -->
-            <div class="bg-slate-800 rounded-3xl p-5 space-y-4">
-                <h3 class="text-sm font-black text-slate-300 uppercase tracking-wider">⚙️ Configuración</h3>
-
-                <!-- Add dish -->
-                <div class="space-y-2">
+            <!-- TAB: MENU -->
+            <div id="admin-panel-menu" class="space-y-4 hidden">
+                <!-- Agregar plato -->
+                <div class="bg-slate-800 rounded-3xl p-5 space-y-3">
                     <p class="text-xs text-slate-500 font-bold uppercase">Agregar plato al menú</p>
                     <div class="grid grid-cols-3 gap-2">
                         <input type="text" id="cfg-emoji" value="🍔" class="bg-slate-700 text-white rounded-xl p-3 text-center text-xl outline-none border-2 border-transparent focus:border-amber-500">
@@ -388,8 +405,51 @@
                     </button>
                 </div>
 
-                <!-- Add table/slot -->
-                <div class="space-y-2 pt-4 border-t border-slate-700">
+                <!-- Lista de platos existentes -->
+                <div class="bg-slate-800 rounded-3xl p-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs text-slate-500 font-bold uppercase">Platos existentes</p>
+                        <select id="menu-sede-filter" onchange="renderDishesList()" class="bg-slate-700 text-white rounded-xl px-3 py-2 text-xs outline-none border-2 border-transparent focus:border-amber-500">
+                            <option value="arboleda">Arboleda</option>
+                            <option value="rincon">Rincón</option>
+                        </select>
+                    </div>
+                    <div id="dishes-list" class="space-y-2 max-h-96 overflow-y-auto no-scrollbar"></div>
+                </div>
+            </div>
+
+            <!-- MODAL: Editar plato -->
+            <div id="edit-dish-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end justify-center p-0">
+                <div class="bg-white w-full max-w-lg rounded-t-3xl p-6 space-y-4" style="max-height:90vh; overflow-y:auto;">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-lg font-black text-slate-900">✏️ Editar Plato</h3>
+                        <button onclick="closeEditDishModal()" class="w-9 h-9 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center text-slate-600 transition">
+                            <i class="fa-solid fa-xmark text-base"></i>
+                        </button>
+                    </div>
+                    <input type="hidden" id="edit-dish-id">
+                    <input type="hidden" id="edit-dish-sede">
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="text" id="edit-emoji" class="bg-slate-100 text-slate-900 rounded-xl p-3 text-center text-xl outline-none border-2 border-transparent focus:border-amber-500">
+                        <div class="col-span-2">
+                            <input type="text" id="edit-category" placeholder="Categoría" class="w-full bg-slate-100 text-slate-900 rounded-xl p-3 text-sm outline-none border-2 border-transparent focus:border-amber-500 placeholder-slate-400 font-medium">
+                        </div>
+                    </div>
+                    <input type="text" id="edit-name" placeholder="Nombre del plato" class="w-full bg-slate-100 text-slate-900 rounded-xl p-4 text-base outline-none border-2 border-transparent focus:border-amber-500 placeholder-slate-400 font-medium">
+                    <input type="number" id="edit-price" placeholder="Precio ($)" class="w-full bg-slate-100 text-slate-900 rounded-xl p-4 text-base outline-none border-2 border-transparent focus:border-amber-500 placeholder-slate-400 font-medium">
+                    <input type="text" id="edit-desc" placeholder="Descripción breve" class="w-full bg-slate-100 text-slate-900 rounded-xl p-4 text-base outline-none border-2 border-transparent focus:border-amber-500 placeholder-slate-400 font-medium">
+                    <div class="flex gap-3 pt-2">
+                        <button onclick="closeEditDishModal()" class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl transition">Cancelar</button>
+                        <button onclick="saveEditDish()" class="flex-1 py-4 bg-amber-500 hover:bg-amber-400 text-white font-black rounded-2xl transition active:scale-95">
+                            <i class="fa-solid fa-floppy-disk mr-2"></i>Guardar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: MESAS -->
+            <div id="admin-panel-mesas" class="space-y-4 hidden">
+                <div class="bg-slate-800 rounded-3xl p-5 space-y-3">
                     <p class="text-xs text-slate-500 font-bold uppercase">Agregar mesa / ranura</p>
                     <div class="flex gap-2">
                         <input type="text" id="cfg-table-name" placeholder="Ej. Mesa 7" class="flex-1 bg-slate-700 text-white rounded-xl p-4 text-base outline-none border-2 border-transparent focus:border-amber-500 placeholder-slate-500">
@@ -405,10 +465,139 @@
                     <div id="tables-list" class="space-y-2 mt-2"></div>
                 </div>
             </div>
+
+            <!-- TAB: PAGOS -->
+            <div id="admin-panel-pagos" class="space-y-4 hidden">
+                <div class="bg-slate-800 rounded-3xl p-5 space-y-4">
+                    <div>
+                        <p class="text-sm font-black text-slate-300 uppercase tracking-wider mb-1">Métodos de Pago</p>
+                        <p class="text-xs text-slate-500">Agrega, edita o elimina los métodos disponibles al cobrar</p>
+                    </div>
+                    <div id="pays-list" class="space-y-2"></div>
+                    <div class="pt-3 border-t border-slate-700 space-y-3">
+                        <p class="text-xs text-slate-500 font-bold uppercase">Agregar nuevo método</p>
+                        <div class="flex gap-2">
+                            <input type="text" id="new-pay-emoji" value="💰" class="w-16 bg-slate-700 text-white rounded-xl p-3 text-center text-xl outline-none border-2 border-transparent focus:border-amber-500">
+                            <input type="text" id="new-pay-name" placeholder="Nombre (ej. Daviplata)" class="flex-1 bg-slate-700 text-white rounded-xl p-3 text-sm outline-none border-2 border-transparent focus:border-amber-500 placeholder-slate-500">
+                        </div>
+                        <button onclick="addPayMethod()" class="w-full bg-amber-500 hover:bg-amber-400 text-white font-bold py-3.5 rounded-2xl transition active:scale-95">
+                            <i class="fa-solid fa-plus mr-2"></i>Agregar Método
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4">
+                    <p class="text-xs font-bold text-amber-600">💡 Los cambios se sincronizan a todos los dispositivos automáticamente si Firebase está configurado.</p>
+                </div>
+            </div>
+
+            <!-- TAB: APARIENCIA -->
+            <div id="admin-panel-apariencia" class="space-y-4 hidden">
+                <!-- Logo -->
+                <div class="bg-slate-800 rounded-3xl p-5 space-y-4">
+                    <p class="text-sm font-black text-slate-300 uppercase tracking-wider">Logo & Marca</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-20 h-20 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0" id="preview-logo-wrap" style="background: var(--accent,#f59e0b);">
+                            <img id="preview-logo-img" class="w-full h-full object-cover hidden" alt="">
+                            <span class="text-4xl" id="preview-logo-emoji">🍔</span>
+                        </div>
+                        <div class="flex-1 space-y-2">
+                            <div class="logo-drop" onclick="document.getElementById('logo-file-input').click()">
+                                <i class="fa-solid fa-image text-slate-400 text-xl mb-1 block"></i>
+                                <p class="text-xs font-bold text-slate-400">Subir imagen de logo</p>
+                                <p class="text-xs text-slate-500">PNG, JPG · máx 2MB</p>
+                            </div>
+                            <input type="file" id="logo-file-input" accept="image/*" class="hidden" onchange="handleLogoUpload(this)">
+                            <button onclick="clearLogo()" class="w-full py-2 bg-slate-700 text-slate-400 text-xs font-bold rounded-xl transition hover:bg-slate-600">
+                                Usar emoji en vez de imagen
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 font-bold block mb-2">EMOJI DEL LOGO (si no usas imagen)</label>
+                        <input type="text" id="cfg-logo-emoji" value="🍔" placeholder="🍔" class="w-full bg-slate-700 text-white rounded-xl p-3 text-xl text-center outline-none border-2 border-transparent focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 font-bold block mb-2">NOMBRE DEL NEGOCIO</label>
+                        <input type="text" id="cfg-brand-name" placeholder="QUILLA HOUSE" class="w-full bg-slate-700 text-white rounded-xl p-4 text-base outline-none border-2 border-transparent focus:border-amber-500 placeholder-slate-500 font-bold">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 font-bold block mb-2">TAGLINE / ESLOGAN</label>
+                        <input type="text" id="cfg-tagline" placeholder="#ElFoodTrailerDelVerdaderoSabor" class="w-full bg-slate-700 text-white rounded-xl p-4 text-sm outline-none border-2 border-transparent focus:border-amber-500 placeholder-slate-500 font-medium">
+                    </div>
+                </div>
+
+                <!-- Color de acento -->
+                <div class="bg-slate-800 rounded-3xl p-5 space-y-4">
+                    <p class="text-sm font-black text-slate-300 uppercase tracking-wider">Color Principal</p>
+                    <div class="flex flex-wrap gap-3">
+                        <div class="color-swatch" style="background:#f59e0b;" onclick="setAccentColor('#f59e0b','#d97706')" title="Ámbar (default)"></div>
+                        <div class="color-swatch" style="background:#ef4444;" onclick="setAccentColor('#ef4444','#dc2626')" title="Rojo"></div>
+                        <div class="color-swatch" style="background:#10b981;" onclick="setAccentColor('#10b981','#059669')" title="Esmeralda"></div>
+                        <div class="color-swatch" style="background:#3b82f6;" onclick="setAccentColor('#3b82f6','#2563eb')" title="Azul"></div>
+                        <div class="color-swatch" style="background:#8b5cf6;" onclick="setAccentColor('#8b5cf6','#7c3aed')" title="Violeta"></div>
+                        <div class="color-swatch" style="background:#ec4899;" onclick="setAccentColor('#ec4899','#db2777')" title="Rosa"></div>
+                        <div class="color-swatch" style="background:#14b8a6;" onclick="setAccentColor('#14b8a6','#0d9488')" title="Teal"></div>
+                        <div class="color-swatch" style="background:#f97316;" onclick="setAccentColor('#f97316','#ea580c')" title="Naranja"></div>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <label class="text-xs text-slate-400 font-bold flex-shrink-0">Color personalizado:</label>
+                        <input type="color" id="custom-accent-color" value="#f59e0b" onchange="setAccentColor(this.value, this.value)" class="w-12 h-10 rounded-xl border-none cursor-pointer bg-slate-700">
+                    </div>
+                    <div class="p-3 rounded-xl" id="color-preview" style="background: var(--accent,#f59e0b);">
+                        <p class="text-white text-sm font-black text-center">Vista previa del color</p>
+                    </div>
+                </div>
+
+                <!-- Guardar apariencia -->
+                <button onclick="saveAppearance()" class="w-full bg-amber-500 hover:bg-amber-400 text-white font-black py-5 rounded-3xl transition active:scale-95 shadow-lg">
+                    <i class="fa-solid fa-palette mr-2"></i>GUARDAR APARIENCIA
+                </button>
+            </div>
+
+            <!-- TAB: FIREBASE -->
+            <div id="admin-panel-firebase" class="space-y-4 hidden">
+                <div class="bg-slate-800 rounded-3xl p-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <p class="text-sm font-black text-slate-300 uppercase tracking-wider">🔥 Configurar Firebase</p>
+                        <div class="flex items-center gap-1.5">
+                            <span class="fb-dot disconnected" id="fb-dot-config"></span>
+                            <span class="text-xs font-bold text-slate-400" id="fb-status-config">Desconectado</span>
+                        </div>
+                    </div>
+                    <div class="bg-blue-900/30 border border-blue-700/40 rounded-2xl p-4 space-y-1">
+                        <p class="text-blue-300 text-xs font-bold">ℹ️ ¿Cómo configurar?</p>
+                        <p class="text-blue-400 text-xs">1. Ve a <strong>console.firebase.google.com</strong></p>
+                        <p class="text-blue-400 text-xs">2. Crea un proyecto → Realtime Database</p>
+                        <p class="text-blue-400 text-xs">3. Copia los datos de configuración aquí abajo</p>
+                        <p class="text-blue-400 text-xs">4. Activa las reglas de lectura/escritura pública</p>
+                    </div>
+                    <input type="text" id="fb-apiKey" placeholder="apiKey" class="w-full bg-slate-700 text-white rounded-xl p-3 text-sm outline-none border-2 border-transparent focus:border-amber-500 placeholder-slate-500 font-mono">
+                    <input type="text" id="fb-authDomain" placeholder="authDomain (xxx.firebaseapp.com)" class="w-full bg-slate-700 text-white rounded-xl p-3 text-sm outline-none border-2 border-transparent focus:border-amber-500 placeholder-slate-500 font-mono">
+                    <input type="text" id="fb-databaseURL" placeholder="databaseURL (https://xxx.firebaseio.com)" class="w-full bg-slate-700 text-white rounded-xl p-3 text-sm outline-none border-2 border-transparent focus:border-amber-500 placeholder-slate-500 font-mono">
+                    <input type="text" id="fb-projectId" placeholder="projectId" class="w-full bg-slate-700 text-white rounded-xl p-3 text-sm outline-none border-2 border-transparent focus:border-amber-500 placeholder-slate-500 font-mono">
+                    <button onclick="connectFirebase()" class="w-full bg-orange-500 hover:bg-orange-400 text-white font-black py-4 rounded-2xl transition active:scale-95">
+                        <i class="fa-solid fa-fire mr-2"></i>CONECTAR FIREBASE
+                    </button>
+                    <button onclick="disconnectFirebase()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-3 rounded-2xl transition active:scale-95">
+                        Desconectar
+                    </button>
+                </div>
+                <div class="bg-slate-800 rounded-3xl p-5 space-y-3">
+                    <p class="text-sm font-black text-slate-300 uppercase tracking-wider">Sincronización manual</p>
+                    <button onclick="syncToFirebase()" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-4 rounded-2xl transition active:scale-95">
+                        <i class="fa-solid fa-cloud-arrow-up mr-2"></i>Subir datos a Firebase
+                    </button>
+                    <button onclick="syncFromFirebase()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl transition active:scale-95">
+                        <i class="fa-solid fa-cloud-arrow-down mr-2"></i>Descargar datos de Firebase
+                    </button>
+                    <p class="text-xs text-slate-500 text-center">Los datos incluyen: ventas, menú, mesas, métodos de pago y apariencia.</p>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <!-- ─── BOTTOM NAVIGATION ─── -->
+    <!-- Bottom Nav -->
     <nav class="fixed bottom-0 left-0 right-0 bottom-nav bg-slate-900 border-t border-slate-800 flex z-30" id="bottom-nav">
         <button onclick="showPage('ventas')" id="nav-ventas" class="flex-1 flex flex-col items-center justify-center py-3 gap-1 transition">
             <i class="fa-solid fa-cash-register text-xl"></i>
@@ -423,12 +612,9 @@
             <span class="text-xs font-bold">Admin</span>
         </button>
     </nav>
+</div>
 
-</div><!-- /app-wrapper -->
-
-<!-- ═══════════════════════════════════════════════════════
-     CART BOTTOM SHEET
-═══════════════════════════════════════════════════════ -->
+<!-- Cart Sheet -->
 <div id="cart-backdrop" onclick="closeCartSheet()" class="hidden fixed inset-0 sheet-backdrop z-50"></div>
 <div id="cart-sheet" class="sheet fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 rounded-t-3xl z-50 flex flex-col" style="max-height: 90vh;">
     <div class="p-5 border-b border-slate-800">
@@ -440,23 +626,17 @@
             </button>
         </div>
     </div>
-
-    <!-- Cart items scrollable -->
     <div class="flex-1 overflow-y-auto p-4 space-y-2" id="cart-items-list">
         <div id="cart-empty-state" class="py-12 text-center">
             <i class="fa-solid fa-basket-shopping text-4xl text-slate-700 block mb-3"></i>
             <p class="text-slate-500 font-semibold">Sin productos todavía</p>
         </div>
     </div>
-
-    <!-- Cart footer -->
     <div class="p-4 border-t border-slate-800 space-y-3">
-        <!-- Total -->
         <div class="flex items-center justify-between bg-slate-800 rounded-2xl px-5 py-4">
             <span class="text-slate-400 font-bold text-sm">TOTAL A COBRAR</span>
             <span class="text-2xl font-black text-white" id="cart-grand-total">$0</span>
         </div>
-        <!-- Enviar comanda & facturar -->
         <div class="grid grid-cols-2 gap-3">
             <button onclick="sendComanda()" class="py-4 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-2xl transition active:scale-95 text-sm">
                 <i class="fa-solid fa-paper-plane mr-2"></i>Comanda
@@ -468,9 +648,7 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     PAYMENT SHEET
-═══════════════════════════════════════════════════════ -->
+<!-- Payment Sheet -->
 <div id="pay-backdrop" onclick="closePaymentSheet()" class="hidden fixed inset-0 sheet-backdrop z-50"></div>
 <div id="pay-sheet" class="sheet fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 rounded-t-3xl z-50 flex flex-col" style="max-height: 90vh;">
     <div class="p-5 border-b border-slate-800">
@@ -478,25 +656,15 @@
         <h3 class="text-xl font-black text-white">Registrar Pago</h3>
         <p class="text-slate-400 text-sm mt-1" id="pay-slot-name">—</p>
     </div>
-
     <div class="flex-1 overflow-y-auto p-4 space-y-4">
-        <!-- Total display -->
         <div class="bg-emerald-900/40 border border-emerald-800/50 rounded-3xl p-5 text-center">
             <p class="text-emerald-400 text-sm font-bold">TOTAL A COBRAR</p>
             <p class="text-4xl font-black text-white mt-1" id="pay-total-display">$0</p>
         </div>
-
-        <!-- Payment methods -->
-        <div class="space-y-2" id="pay-methods-grid">
-            <!-- rendered by JS -->
-        </div>
-
-        <!-- Efectivo helper -->
+        <div class="space-y-2" id="pay-methods-grid"></div>
         <div id="cash-helper" class="space-y-3">
             <p class="text-xs text-slate-500 font-bold uppercase">Billetes recibidos</p>
-            <div class="grid grid-cols-3 gap-2" id="cash-presets">
-                <!-- rendered by JS -->
-            </div>
+            <div class="grid grid-cols-3 gap-2" id="cash-presets"></div>
             <div class="bg-slate-800 rounded-2xl flex items-center gap-3 px-4 py-3">
                 <span class="text-slate-500 font-bold">$</span>
                 <input type="number" id="cash-given-input" oninput="calcChange(this.value)" placeholder="Monto entregado" class="bg-transparent text-white text-base font-bold flex-1 outline-none placeholder-slate-600">
@@ -507,7 +675,6 @@
             </div>
         </div>
     </div>
-
     <div class="p-4 border-t border-slate-800">
         <button onclick="processPayment()" class="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-lg rounded-3xl transition active:scale-95 shadow-2xl shadow-emerald-900/50">
             <i class="fa-solid fa-check-circle mr-2"></i>CONFIRMAR PAGO
@@ -515,42 +682,35 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     RECEIPT MODAL
-═══════════════════════════════════════════════════════ -->
+<!-- Receipt Modal -->
 <div id="receipt-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-3xl w-full max-w-sm p-6 text-slate-900 space-y-4" id="printArea">
         <div class="text-center">
-            <h3 class="text-xl font-black">QUILLA HOUSE</h3>
+            <h3 class="text-xl font-black" id="rec-brand-name">QUILLA HOUSE</h3>
             <p class="text-xs text-slate-500 font-semibold" id="rec-sede"></p>
             <p class="text-xs text-slate-400" id="rec-datetime"></p>
         </div>
         <div class="border-t border-dashed border-slate-300 pt-3">
             <div class="flex justify-between text-sm font-bold text-slate-500 mb-2">
-                <span>Mesa/Destino:</span>
-                <span id="rec-slot"></span>
+                <span>Mesa/Destino:</span><span id="rec-slot"></span>
             </div>
             <div id="rec-items" class="space-y-1 text-sm"></div>
         </div>
         <div class="border-t border-dashed border-slate-300 pt-3 space-y-1">
             <div class="flex justify-between font-black text-base">
-                <span>TOTAL</span>
-                <span id="rec-total">$0</span>
+                <span>TOTAL</span><span id="rec-total">$0</span>
             </div>
             <div class="flex justify-between text-sm text-slate-500">
-                <span>Método:</span>
-                <span id="rec-method"></span>
+                <span>Método:</span><span id="rec-method"></span>
             </div>
             <div class="flex justify-between text-sm text-slate-500">
-                <span>Entregado:</span>
-                <span id="rec-given"></span>
+                <span>Entregado:</span><span id="rec-given"></span>
             </div>
             <div class="flex justify-between text-sm font-bold">
-                <span>Devuelta:</span>
-                <span id="rec-change"></span>
+                <span>Devuelta:</span><span id="rec-change"></span>
             </div>
         </div>
-        <div class="text-center text-xs text-slate-400 pt-2 border-t border-dashed border-slate-300">
+        <div class="text-center text-xs text-slate-400 pt-2 border-t border-dashed border-slate-300" id="rec-tagline">
             ¡Gracias por su preferencia! 🍔
         </div>
         <div class="flex gap-3">
@@ -564,17 +724,15 @@
     </div>
 </div>
 
-<!-- Toast container -->
 <div id="toast-container"></div>
 
-<!-- ═══════════════════════════════════════════════════════
-     JAVASCRIPT
-═══════════════════════════════════════════════════════ -->
 <script>
-// ───────── DATA ─────────
+// ═══════ FIREBASE STATE ═══════
+let fbApp = null, fbDb = null, fbConnected = false;
+const { initializeApp, getDatabase, ref, set, get, onValue, push } = window._fbImports || {};
 
+// ═══════ DATA ═══════
 const PINS = { arboleda: '1234', rincon: '5678', admin: '0000' };
-
 const PROFILE_CONFIG = {
     arboleda: { name: 'Arboleda', label: '🚛 Food Trailer', icon: '🚛', color: 'text-teal-400' },
     rincon:   { name: 'Rincón de Piedra', label: '🏠 Sede Local', icon: '🏠', color: 'text-rose-400' },
@@ -598,19 +756,13 @@ const DEFAULT_MENU_ARBOLEDA = [
     { id:"ARB-PA2", name:"Patacón con Carne", price:19000, category:"Patacones", emoji:"🥩", description:"Carne desmechada, chorizo, tocineta, maicitos, queso." },
     { id:"ARB-PA3", name:"Patacón Mixto", price:21000, category:"Patacones", emoji:"🌟", description:"Carne y pollo, chorizo, tocineta, maicitos, queso." },
     { id:"ARB-PP1", name:"Yuquitas con Suero", price:10000, category:"Pa Picar", emoji:"🍟", description:"Yucas fritas crujientes con suero costeño." },
-    { id:"ARB-PP2", name:"Patacones con Suero", price:10000, category:"Pa Picar", emoji:"🍌", description:"Patacones crocantes con suero costeño." },
-    { id:"ARB-PP3", name:"Anillos de Cebolla", price:10000, category:"Pa Picar", emoji:"🧅", description:"Anillos apanados y crujientes." },
     { id:"ARB-CE1", name:"Ceviche Camarón (7 Oz)", price:13000, category:"Ceviche", emoji:"🦐", description:"Fresco ceviche de camarones 7 oz." },
-    { id:"ARB-CE2", name:"Ceviche Camarón (12 Oz)", price:20000, category:"Ceviche", emoji:"🦐", description:"Fresco ceviche de camarones 12 oz." },
     { id:"ARB-B1", name:"Botella de Agua", price:2000, category:"Bebidas", emoji:"💧", description:"Agua embotellada natural." },
     { id:"ARB-B2", name:"Gaseosa 400 ML", price:4000, category:"Bebidas", emoji:"🥤", description:"Gaseosa personal." },
-    { id:"ARB-B3", name:"Jugo Hit 1.5 L", price:6000, category:"Bebidas", emoji:"🧃", description:"Jugo familiar." },
-    { id:"ARB-B4", name:"Gaseosa 1.5 L", price:7000, category:"Bebidas", emoji:"🥤", description:"Gaseosa familiar." },
     { id:"ARB-A1", name:"Adicional Papas", price:6000, category:"Adicionales", emoji:"🍟", description:"Porción extra de papas." },
     { id:"ARB-A2", name:"Queso Fundido", price:6000, category:"Adicionales", emoji:"🧀", description:"Queso cheddar fundido." },
     { id:"ARB-A3", name:"Tocineta Extra", price:3000, category:"Adicionales", emoji:"🥓", description:"Tira crocante de tocineta." },
-    { id:"ARB-A5", name:"Suero Costeño", price:1000, category:"Adicionales", emoji:"🍶", description:"Suero costeño tradicional." },
-    { id:"ARB-A6", name:"Empaque Llevar", price:1000, category:"Adicionales", emoji:"🛍️", description:"Empaque térmico." }
+    { id:"ARB-A5", name:"Suero Costeño", price:1000, category:"Adicionales", emoji:"🍶", description:"Suero costeño tradicional." }
 ];
 
 const DEFAULT_MENU_RINCON = [
@@ -618,8 +770,6 @@ const DEFAULT_MENU_RINCON = [
     { id:"RIN-S2", name:"Choripapa", price:17000, category:"Salchipapas", emoji:"🌭", description:"Chorizo, papa, lechuga, ripio, costeño." },
     { id:"RIN-S3", name:"Salchipapa Rebolera", price:22000, category:"Salchipapas", emoji:"💥", description:"Pechuga, Cerdo, Salchicha, papa, lechuga, costeño." },
     { id:"RIN-S4", name:"Salchipapa Desgraciada", price:34000, category:"Salchipapas", emoji:"😈", description:"Pechuga, cerdo, chorizo, butifarra, papa, lechuga, ripio." },
-    { id:"RIN-S5", name:"Salchipapa Revoltosa 2P", price:54000, category:"Salchipapas", emoji:"🔥", description:"Para 2 personas." },
-    { id:"RIN-S6", name:"Salchipapa Revoltosa 4P", price:105000, category:"Salchipapas", emoji:"👑", description:"Para 4 personas." },
     { id:"RIN-H1", name:"Hamburguesa de Res", price:15000, category:"Hamburguesas", emoji:"🍔", description:"Pan artesanal, Res, tomate, cebolla, queso." },
     { id:"RIN-H2", name:"Hamburguesa de Pollo", price:15000, category:"Hamburguesas", emoji:"🍗", description:"Pan artesanal, pollo apanado, tomate, cebolla, queso." },
     { id:"RIN-H3", name:"Hamburguesa Costeña", price:28000, category:"Hamburguesas", emoji:"🌴", description:"Pan artesanal, Res, tocineta, butifarra, queso costeño frito, tajadas." },
@@ -629,98 +779,455 @@ const DEFAULT_MENU_RINCON = [
     { id:"RIN-P3", name:"Perro Quillero", price:25000, category:"Perros", emoji:"🌶️", description:"Cerdo, Pechuga, chorizo, queso, lechuga." },
     { id:"RIN-PA1", name:"Patacón con Pollo", price:21000, category:"Patacones", emoji:"🍌", description:"Pollo desmechado, chorizo, tocineta, maicitos, queso." },
     { id:"RIN-PA2", name:"Patacón con Carne", price:21000, category:"Patacones", emoji:"🥩", description:"Carne desmechada, chorizo, tocineta, maicitos, queso." },
-    { id:"RIN-PA3", name:"Patacón Mixto", price:23000, category:"Patacones", emoji:"🌟", description:"Carne y pollo, chorizo, tocineta, maicitos, queso." },
     { id:"RIN-PP1", name:"Yuquitas con Suero", price:10000, category:"Pa Picar", emoji:"🍟", description:"Yucas fritas crujientes con suero costeño." },
-    { id:"RIN-PP2", name:"Patacones con Suero", price:10000, category:"Pa Picar", emoji:"🍌", description:"Patacones crocantes con suero costeño." },
-    { id:"RIN-PP3", name:"Anillos de Cebolla", price:10000, category:"Pa Picar", emoji:"🧅", description:"Anillos apanados y crujientes." },
     { id:"RIN-C1", name:"Pechuga Plancha (300g)", price:28000, category:"Carnes", emoji:"🍗", description:"300g de pechuga a la plancha con papas." },
     { id:"RIN-C2", name:"Lomo de Cerdo (300g)", price:32000, category:"Carnes", emoji:"🥩", description:"300g de lomo de cerdo con papas." },
-    { id:"RIN-C3", name:"Churrasco (300g)", price:34000, category:"Carnes", emoji:"🍖", description:"300g de churrasco con papas." },
     { id:"RIN-B1", name:"Gaseosa 400 ML", price:5000, category:"Bebidas", emoji:"🥤", description:"Gaseosa personal." },
     { id:"RIN-B2", name:"Gaseosa 1.5 L", price:9000, category:"Bebidas", emoji:"🥤", description:"Gaseosa familiar." },
     { id:"RIN-B3", name:"Limonada Natural", price:7000, category:"Limonadas", emoji:"🍋", description:"Limonada natural fría." },
     { id:"RIN-B4", name:"Limonada de Coco", price:9000, category:"Limonadas", emoji:"🥥", description:"Limonada cremosa con coco." },
-    { id:"RIN-B5", name:"Limonada Cerezada", price:9000, category:"Limonadas", emoji:"🍒", description:"Limonada dulce cerezada." },
-    { id:"RIN-B6", name:"Jugo Natural en Agua", price:8000, category:"Jugos", emoji:"🧃", description:"Jugo preparado en agua fresca." },
-    { id:"RIN-B7", name:"Jugo Natural en Leche", price:9000, category:"Jugos", emoji:"🥛", description:"Jugo natural cremoso en leche." },
     { id:"RIN-B8", name:"Cerveza Costeñita", price:6000, category:"Cervezas", emoji:"🍺", description:"Cerveza Costeñita." },
     { id:"RIN-B9", name:"Cerveza Nacional", price:8000, category:"Cervezas", emoji:"🍺", description:"Club Colombia / Águila." },
-    { id:"RIN-B10", name:"Cerveza Corona", price:9000, category:"Cervezas", emoji:"🍺", description:"Cerveza Corona." },
     { id:"RIN-B11", name:"Botella de Agua", price:3000, category:"Bebidas", emoji:"💧", description:"Agua mineral fresca." },
     { id:"RIN-A1", name:"Adicional Papas", price:6000, category:"Adicionales", emoji:"🍟", description:"Porción de papas." },
     { id:"RIN-A2", name:"Queso Fundido", price:6000, category:"Adicionales", emoji:"🧀", description:"Queso cheddar fundido." },
-    { id:"RIN-A3", name:"Tocineta Extra", price:3000, category:"Adicionales", emoji:"🥓", description:"Tiras de tocineta crujiente." },
-    { id:"RIN-A4", name:"Suero Costeño", price:1000, category:"Adicionales", emoji:"🍶", description:"Suero costeño tradicional." }
+    { id:"RIN-A3", name:"Tocineta Extra", price:3000, category:"Adicionales", emoji:"🥓", description:"Tiras de tocineta crujiente." }
 ];
 
-// ───────── STATE ─────────
-let currentRole = null;
-let selectedRoleTemp = null;
-let pinBuffer = '';
-let currentSlot = null;
-let activeHubTab = 'mesas';
-let activeCategory = null;
-let searchQuery = '';
-let selectedPayMethod = 'Efectivo';
-let activeAdminFilter = 'today';
+// ═══════ STATE ═══════
+let currentRole = null, selectedRoleTemp = null, pinBuffer = '';
+let currentSlot = null, activeHubTab = 'mesas', activeCategory = null;
+let searchQuery = '', selectedPayMethod = 'Efectivo', activeAdminFilter = 'today';
+let activeMenu = [], systemTables = [], systemPayMethods = [], tableOrders = {}, salesHistory = [];
+let appAppearance = { accentColor: '#f59e0b', accentDark: '#d97706', brandName: 'QUILLA HOUSE', tagline: '#ElFoodTrailerDelVerdaderoSabor', logoEmoji: '🍔', logoImage: null };
 
-let activeMenu = [];
-let systemTables = [];
-let systemPayMethods = [];
-let tableOrders = {};
-let salesHistory = [];
-
-// ───────── INIT ─────────
+// ═══════ INIT ═══════
 function init() {
     loadData();
-    // Check saved session
+    applyAppearance();
+    loadFirebaseConfig();
     const savedRole = sessionStorage.getItem('qh_role');
-    if (savedRole) {
-        loginAs(savedRole);
-    }
+    if (savedRole) loginAs(savedRole);
 }
 
 function loadData() {
-    const savedMenuA = localStorage.getItem('qh_menu_arb_v7');
-    const savedMenuR = localStorage.getItem('qh_menu_rin_v7');
-    if (!savedMenuA) localStorage.setItem('qh_menu_arb_v7', JSON.stringify(DEFAULT_MENU_ARBOLEDA));
-    if (!savedMenuR) localStorage.setItem('qh_menu_rin_v7', JSON.stringify(DEFAULT_MENU_RINCON));
+    const savedMenuA = localStorage.getItem('qh_menu_arb_v8');
+    const savedMenuR = localStorage.getItem('qh_menu_rin_v8');
+    if (!savedMenuA) localStorage.setItem('qh_menu_arb_v8', JSON.stringify(DEFAULT_MENU_ARBOLEDA));
+    if (!savedMenuR) localStorage.setItem('qh_menu_rin_v8', JSON.stringify(DEFAULT_MENU_RINCON));
 
     const defaultTables = [
         {name:'Mesa 1',type:'mesas'},{name:'Mesa 2',type:'mesas'},{name:'Mesa 3',type:'mesas'},
         {name:'Mesa 4',type:'mesas'},{name:'Mesa 5',type:'mesas'},{name:'Mesa 6',type:'mesas'},
-        {name:'Domicilio 1',type:'domicilios'},{name:'Domicilio 2',type:'domicilios'},{name:'Domicilio 3',type:'domicilios'},
+        {name:'Domicilio 1',type:'domicilios'},{name:'Domicilio 2',type:'domicilios'},
         {name:'Llevar 1',type:'llevar'},{name:'Llevar 2',type:'llevar'}
     ];
-
-    const savedTables = localStorage.getItem('qh_tables_v7');
+    const savedTables = localStorage.getItem('qh_tables_v8');
     systemTables = savedTables ? JSON.parse(savedTables) : defaultTables;
-    if (!savedTables) localStorage.setItem('qh_tables_v7', JSON.stringify(defaultTables));
+    if (!savedTables) localStorage.setItem('qh_tables_v8', JSON.stringify(defaultTables));
 
-    const defaultPays = ['Efectivo', 'Nequi/Daviplata', 'Tarjeta'];
-    const savedPays = localStorage.getItem('qh_pays_v7');
+    const defaultPays = [
+        { name: 'Efectivo', emoji: '💵' },
+        { name: 'Nequi/Daviplata', emoji: '📱' },
+        { name: 'Tarjeta', emoji: '💳' }
+    ];
+    const savedPays = localStorage.getItem('qh_pays_v8');
     systemPayMethods = savedPays ? JSON.parse(savedPays) : defaultPays;
-    if (!savedPays) localStorage.setItem('qh_pays_v7', JSON.stringify(defaultPays));
+    if (!savedPays) localStorage.setItem('qh_pays_v8', JSON.stringify(defaultPays));
 
-    tableOrders = JSON.parse(localStorage.getItem('qh_orders_v7')) || {};
+    tableOrders = JSON.parse(localStorage.getItem('qh_orders_v8')) || {};
     systemTables.forEach(t => { if (!tableOrders[t.name]) tableOrders[t.name] = []; });
 
     const today = getDateStr(0);
     const yesterday = getDateStr(1);
     const defaultSales = [
         { id:'POS-001', datetime:`${today}, 11:30 AM`, rawDate:today, sedeId:1, sedeName:'Arboleda', tableName:'Mesa 3', paymentMethod:'Efectivo', total:42000, cashGiven:50000, cashChange:8000, items:[{name:'Salchipapa Rebolera',price:29000,qty:1,notes:''},{name:'Botella de Agua',price:2000,qty:1,notes:''},{name:'Yuquitas con Suero',price:10000,qty:1,notes:''}] },
-        { id:'POS-002', datetime:`${yesterday}, 08:15 PM`, rawDate:yesterday, sedeId:2, sedeName:'Rincón', tableName:'Mesa 1', paymentMethod:'Tarjeta', total:62000, cashGiven:62000, cashChange:0, items:[{name:'Hamburguesa Quillera',price:25000,qty:2,notes:'Sin cebolla'},{name:'Limonada de Coco',price:9000,qty:1,notes:''},{name:'Botella de Agua',price:3000,qty:1,notes:''}] }
+        { id:'POS-002', datetime:`${yesterday}, 08:15 PM`, rawDate:yesterday, sedeId:2, sedeName:'Rincón', tableName:'Mesa 1', paymentMethod:'Tarjeta', total:62000, cashGiven:62000, cashChange:0, items:[{name:'Hamburguesa Quillera',price:25000,qty:2,notes:'Sin cebolla'},{name:'Limonada de Coco',price:9000,qty:1,notes:''}] }
     ];
-    salesHistory = JSON.parse(localStorage.getItem('qh_sales_v7')) || defaultSales;
+    salesHistory = JSON.parse(localStorage.getItem('qh_sales_v8')) || defaultSales;
+
+    const savedAppearance = localStorage.getItem('qh_appearance_v8');
+    if (savedAppearance) appAppearance = { ...appAppearance, ...JSON.parse(savedAppearance) };
 }
 
-// ───────── DATE UTILS ─────────
+// ═══════ APPEARANCE ═══════
+function applyAppearance() {
+    const a = appAppearance;
+    document.documentElement.style.setProperty('--accent', a.accentColor);
+    document.documentElement.style.setProperty('--accent-dark', a.accentDark || a.accentColor);
+
+    // Brand name
+    ['login-brand-name','header-brand-name','rec-brand-name'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = a.brandName || 'QUILLA HOUSE';
+    });
+    document.getElementById('app-title').textContent = (a.brandName || 'QUILLA HOUSE') + ' POS';
+    const tl = document.getElementById('login-tagline');
+    if (tl) tl.textContent = a.tagline || '#ElFoodTrailerDelVerdaderoSabor';
+    const rec_tl = document.getElementById('rec-tagline');
+    if (rec_tl) rec_tl.textContent = (a.tagline || '¡Gracias por su preferencia!') + ' 🍔';
+
+    // Logo
+    const logoEmoji = a.logoEmoji || '🍔';
+    ['login-logo-emoji','header-logo-emoji','preview-logo-emoji'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = logoEmoji;
+    });
+
+    if (a.logoImage) {
+        ['login-logo-wrap','header-logo-wrap','preview-logo-wrap'].forEach(wrapId => {
+            const wrapEl = document.getElementById(wrapId);
+            if (!wrapEl) return;
+            // Try to show image
+            const imgId = wrapId.replace('-wrap','-img');
+            const imgEl = document.getElementById(imgId);
+            const emojiEl = document.getElementById(wrapId.replace('-wrap','-emoji'));
+            if (imgEl) { imgEl.src = a.logoImage; imgEl.classList.remove('hidden'); }
+            if (emojiEl) emojiEl.classList.add('hidden');
+        });
+    }
+
+    // Accent color on header logo backgrounds
+    ['login-logo-wrap','header-logo-wrap','preview-logo-wrap'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.background = a.accentColor;
+    });
+
+    // Update color swatches selection
+    document.querySelectorAll('.color-swatch').forEach(sw => {
+        sw.classList.toggle('selected', sw.style.background === a.accentColor || sw.style.backgroundColor === a.accentColor);
+    });
+
+    // Update config inputs if in admin
+    const cfg = document.getElementById('cfg-brand-name');
+    if (cfg) cfg.value = a.brandName || '';
+    const cft = document.getElementById('cfg-tagline');
+    if (cft) cft.value = a.tagline || '';
+    const cfe = document.getElementById('cfg-logo-emoji');
+    if (cfe) cfe.value = a.logoEmoji || '🍔';
+}
+
+function setAccentColor(color, dark) {
+    appAppearance.accentColor = color;
+    appAppearance.accentDark = dark || color;
+    document.documentElement.style.setProperty('--accent', color);
+    document.getElementById('custom-accent-color').value = color;
+    document.querySelectorAll('.color-swatch').forEach(sw => {
+        sw.classList.toggle('selected', sw.style.background === color);
+    });
+}
+
+function handleLogoUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { showToast('Imagen muy grande (máx 2MB)', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        appAppearance.logoImage = e.target.result;
+        // Preview
+        const previewImg = document.getElementById('preview-logo-img');
+        const previewEmoji = document.getElementById('preview-logo-emoji');
+        if (previewImg) { previewImg.src = e.target.result; previewImg.classList.remove('hidden'); }
+        if (previewEmoji) previewEmoji.classList.add('hidden');
+        showToast('Logo cargado ✅', 'success');
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearLogo() {
+    appAppearance.logoImage = null;
+    const previewImg = document.getElementById('preview-logo-img');
+    const previewEmoji = document.getElementById('preview-logo-emoji');
+    if (previewImg) { previewImg.src = ''; previewImg.classList.add('hidden'); }
+    if (previewEmoji) previewEmoji.classList.remove('hidden');
+    // Also clear header
+    const headerImg = document.getElementById('header-logo-img');
+    const headerEmoji = document.getElementById('header-logo-emoji');
+    if (headerImg) { headerImg.src = ''; headerImg.classList.add('hidden'); }
+    if (headerEmoji) headerEmoji.classList.remove('hidden');
+    showToast('Logo eliminado', 'info');
+}
+
+function saveAppearance() {
+    const brandName = document.getElementById('cfg-brand-name').value.trim() || 'QUILLA HOUSE';
+    const tagline = document.getElementById('cfg-tagline').value.trim();
+    const logoEmoji = document.getElementById('cfg-logo-emoji').value.trim() || '🍔';
+    appAppearance = { ...appAppearance, brandName, tagline, logoEmoji };
+    localStorage.setItem('qh_appearance_v8', JSON.stringify(appAppearance));
+    applyAppearance();
+    showToast('✅ Apariencia guardada', 'success');
+    if (fbConnected) syncToFirebase();
+}
+
+// ═══════ PAYMENT METHODS ADMIN ═══════
+function renderPaysList() {
+    const list = document.getElementById('pays-list');
+    if (!list) return;
+    list.innerHTML = '';
+    systemPayMethods.forEach((m, idx) => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between bg-slate-700 rounded-xl px-4 py-3';
+        div.innerHTML = `
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">${m.emoji || '💰'}</span>
+                <span class="text-white font-bold text-sm">${m.name}</span>
+            </div>
+            <button onclick="deletePayMethod(${idx})" class="text-rose-400 hover:text-rose-300 p-1">
+                <i class="fa-solid fa-trash-can text-sm"></i>
+            </button>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function addPayMethod() {
+    const name = document.getElementById('new-pay-name').value.trim();
+    const emoji = document.getElementById('new-pay-emoji').value.trim() || '💰';
+    if (!name) { showToast('Ingresa un nombre', 'error'); return; }
+    if (systemPayMethods.find(m => m.name.toLowerCase() === name.toLowerCase())) {
+        showToast('Ya existe ese método', 'error'); return;
+    }
+    systemPayMethods.push({ name, emoji });
+    localStorage.setItem('qh_pays_v8', JSON.stringify(systemPayMethods));
+    document.getElementById('new-pay-name').value = '';
+    document.getElementById('new-pay-emoji').value = '💰';
+    renderPaysList();
+    showToast('✅ Método agregado', 'success');
+    if (fbConnected) syncToFirebase();
+}
+
+function deletePayMethod(idx) {
+    systemPayMethods.splice(idx, 1);
+    localStorage.setItem('qh_pays_v8', JSON.stringify(systemPayMethods));
+    renderPaysList();
+    showToast('Método eliminado', 'info');
+    if (fbConnected) syncToFirebase();
+}
+
+// ═══════ FIREBASE ═══════
+function loadFirebaseConfig() {
+    const cfg = localStorage.getItem('qh_fb_config');
+    if (cfg) {
+        try {
+            const parsed = JSON.parse(cfg);
+            document.getElementById('fb-apiKey').value = parsed.apiKey || '';
+            document.getElementById('fb-authDomain').value = parsed.authDomain || '';
+            document.getElementById('fb-databaseURL').value = parsed.databaseURL || '';
+            document.getElementById('fb-projectId').value = parsed.projectId || '';
+            if (parsed.apiKey && parsed.databaseURL) {
+                connectFirebase(true);
+            }
+        } catch(e) {}
+    }
+}
+
+async function connectFirebase(silent = false) {
+    if (!window._fbImports) {
+        showToast('Firebase SDK cargando, espera...', 'info');
+        setTimeout(() => connectFirebase(silent), 1500);
+        return;
+    }
+    const { initializeApp, getDatabase, ref, onValue } = window._fbImports;
+    const apiKey = document.getElementById('fb-apiKey').value.trim();
+    const authDomain = document.getElementById('fb-authDomain').value.trim();
+    const databaseURL = document.getElementById('fb-databaseURL').value.trim();
+    const projectId = document.getElementById('fb-projectId').value.trim();
+
+    if (!apiKey || !databaseURL) {
+        showToast('Completa apiKey y databaseURL', 'error'); return;
+    }
+
+    try {
+        // Disconnect existing
+        if (fbApp) {
+            try { fbApp.delete && fbApp.delete(); } catch(e) {}
+        }
+
+        const cfg = { apiKey, authDomain, databaseURL, projectId };
+        localStorage.setItem('qh_fb_config', JSON.stringify(cfg));
+
+        fbApp = initializeApp(cfg, 'qh-pos-' + Date.now());
+        fbDb = getDatabase(fbApp);
+        fbConnected = true;
+
+        setFbStatus('connected', 'Conectado');
+        if (!silent) showToast('🔥 Firebase conectado!', 'success');
+
+        // Start listening for real-time updates
+        startFirebaseListeners();
+        // Sync down on connect
+        await syncFromFirebase();
+
+    } catch(e) {
+        fbConnected = false;
+        setFbStatus('error', 'Error');
+        showToast('Error al conectar: ' + e.message, 'error');
+    }
+}
+
+function disconnectFirebase() {
+    fbConnected = false;
+    fbDb = null;
+    fbApp = null;
+    localStorage.removeItem('qh_fb_config');
+    setFbStatus('disconnected', 'Desconectado');
+    showToast('Firebase desconectado', 'info');
+}
+
+function setFbStatus(state, text) {
+    const dots = ['fb-status-dot','fb-dot-header','fb-dot-admin','fb-dot-config'];
+    const texts = ['fb-status-text','fb-text-admin','fb-status-config'];
+    dots.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.className = 'fb-dot ' + state;
+    });
+    texts.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    });
+}
+
+function startFirebaseListeners() {
+    if (!fbDb) return;
+    const { ref, onValue } = window._fbImports;
+
+    // Listen for sales
+    onValue(ref(fbDb, 'qh/sales'), (snap) => {
+        if (snap.exists()) {
+            const data = snap.val();
+            salesHistory = Object.values(data);
+            localStorage.setItem('qh_sales_v8', JSON.stringify(salesHistory));
+            if (currentRole === 'admin') renderAdminDashboard();
+            showSyncBadge('↓ Ventas sincronizadas');
+        }
+    });
+
+    // Listen for tables
+    onValue(ref(fbDb, 'qh/tables'), (snap) => {
+        if (snap.exists()) {
+            systemTables = snap.val();
+            localStorage.setItem('qh_tables_v8', JSON.stringify(systemTables));
+            if (currentRole !== 'admin') renderSalonView();
+            showSyncBadge('↓ Mesas sincronizadas');
+        }
+    });
+
+    // Listen for payMethods
+    onValue(ref(fbDb, 'qh/pays'), (snap) => {
+        if (snap.exists()) {
+            systemPayMethods = snap.val();
+            localStorage.setItem('qh_pays_v8', JSON.stringify(systemPayMethods));
+            renderPaysList();
+            showSyncBadge('↓ Métodos actualizados');
+        }
+    });
+
+    // Listen for appearance
+    onValue(ref(fbDb, 'qh/appearance'), (snap) => {
+        if (snap.exists()) {
+            appAppearance = { ...appAppearance, ...snap.val() };
+            localStorage.setItem('qh_appearance_v8', JSON.stringify(appAppearance));
+            applyAppearance();
+            showSyncBadge('↓ Apariencia actualizada');
+        }
+    });
+
+    // Listen for menus
+    onValue(ref(fbDb, 'qh/menu_arb'), (snap) => {
+        if (snap.exists()) {
+            const menu = snap.val();
+            localStorage.setItem('qh_menu_arb_v8', JSON.stringify(menu));
+            if (currentRole === 'arboleda') { activeMenu = menu; renderProducts(); }
+        }
+    });
+    onValue(ref(fbDb, 'qh/menu_rin'), (snap) => {
+        if (snap.exists()) {
+            const menu = snap.val();
+            localStorage.setItem('qh_menu_rin_v8', JSON.stringify(menu));
+            if (currentRole === 'rincon') { activeMenu = menu; renderProducts(); }
+        }
+    });
+}
+
+async function syncToFirebase() {
+    if (!fbDb || !fbConnected) { showToast('Firebase no está conectado', 'error'); return; }
+    const { ref, set } = window._fbImports;
+    try {
+        const salesObj = {};
+        salesHistory.forEach((s, i) => { salesObj['sale_' + i] = s; });
+        await set(ref(fbDb, 'qh/sales'), salesObj);
+        await set(ref(fbDb, 'qh/tables'), systemTables);
+        await set(ref(fbDb, 'qh/pays'), systemPayMethods);
+        await set(ref(fbDb, 'qh/appearance'), appAppearance);
+        await set(ref(fbDb, 'qh/menu_arb'), JSON.parse(localStorage.getItem('qh_menu_arb_v8') || '[]'));
+        await set(ref(fbDb, 'qh/menu_rin'), JSON.parse(localStorage.getItem('qh_menu_rin_v8') || '[]'));
+        showToast('☁️ Datos subidos a Firebase', 'success');
+    } catch(e) {
+        showToast('Error al subir: ' + e.message, 'error');
+    }
+}
+
+async function syncFromFirebase() {
+    if (!fbDb || !fbConnected) { showToast('Firebase no está conectado', 'error'); return; }
+    const { ref, get } = window._fbImports;
+    try {
+        const snap = await get(ref(fbDb, 'qh'));
+        if (snap.exists()) {
+            const d = snap.val();
+            if (d.sales) { salesHistory = Object.values(d.sales); localStorage.setItem('qh_sales_v8', JSON.stringify(salesHistory)); }
+            if (d.tables) { systemTables = d.tables; localStorage.setItem('qh_tables_v8', JSON.stringify(systemTables)); }
+            if (d.pays) { systemPayMethods = d.pays; localStorage.setItem('qh_pays_v8', JSON.stringify(systemPayMethods)); }
+            if (d.appearance) { appAppearance = { ...appAppearance, ...d.appearance }; localStorage.setItem('qh_appearance_v8', JSON.stringify(appAppearance)); applyAppearance(); }
+            if (d.menu_arb) localStorage.setItem('qh_menu_arb_v8', JSON.stringify(d.menu_arb));
+            if (d.menu_rin) localStorage.setItem('qh_menu_rin_v8', JSON.stringify(d.menu_rin));
+            renderPaysList();
+            showToast('☁️ Datos descargados de Firebase', 'success');
+        } else {
+            showToast('Sin datos en Firebase aún', 'info');
+        }
+    } catch(e) {
+        showToast('Error al descargar: ' + e.message, 'error');
+    }
+}
+
+function showSyncBadge(msg) {
+    const badge = document.getElementById('sync-badge');
+    badge.textContent = msg;
+    badge.style.display = 'block';
+    badge.style.background = '#10b981';
+    badge.style.color = '#fff';
+    setTimeout(() => { badge.style.display = 'none'; }, 2500);
+}
+
+// ═══════ ADMIN TABS ═══════
+function switchAdminTab(tab) {
+    ['reportes','menu','mesas','pagos','apariencia','firebase'].forEach(t => {
+        document.getElementById('admin-panel-' + t).classList.toggle('hidden', t !== tab);
+        document.getElementById('atab-' + t).classList.toggle('active', t === tab);
+    });
+    if (tab === 'reportes') renderAdminDashboard();
+    if (tab === 'menu') renderDishesList();
+    if (tab === 'pagos') renderPaysList();
+    if (tab === 'apariencia') {
+        // Pre-fill fields
+        document.getElementById('cfg-brand-name').value = appAppearance.brandName || '';
+        document.getElementById('cfg-tagline').value = appAppearance.tagline || '';
+        document.getElementById('cfg-logo-emoji').value = appAppearance.logoEmoji || '🍔';
+        document.getElementById('custom-accent-color').value = appAppearance.accentColor || '#f59e0b';
+        document.getElementById('preview-logo-emoji').textContent = appAppearance.logoEmoji || '🍔';
+        document.getElementById('preview-logo-wrap').style.background = appAppearance.accentColor || '#f59e0b';
+    }
+    if (tab === 'mesas') renderAdminDashboard();
+}
+
+// ═══════ DATE UTILS ═══════
 function getDateStr(daysAgo = 0) {
     const d = new Date(Date.now() - daysAgo * 86400000);
     return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 }
 
-// ───────── PROFILE SELECTION ─────────
+// ═══════ PROFILE / PIN ═══════
 function selectProfile(role) {
     selectedRoleTemp = role;
     const cfg = PROFILE_CONFIG[role];
@@ -733,22 +1240,11 @@ function selectProfile(role) {
     showScreen('screen-pin');
 }
 
-function cancelPin() {
-    selectedRoleTemp = null;
-    pinBuffer = '';
-    showScreen('screen-login');
-}
+function cancelPin() { selectedRoleTemp = null; pinBuffer = ''; showScreen('screen-login'); }
 
 function pinKey(key) {
-    if (key === 'clear') {
-        pinBuffer = '';
-        updatePinDots();
-        return;
-    }
-    if (key === 'enter') {
-        checkPin();
-        return;
-    }
+    if (key === 'clear') { pinBuffer = ''; updatePinDots(); return; }
+    if (key === 'enter') { checkPin(); return; }
     if (pinBuffer.length >= 4) return;
     pinBuffer += key;
     updatePinDots();
@@ -756,20 +1252,16 @@ function pinKey(key) {
 }
 
 function updatePinDots() {
-    for (let i = 0; i < 4; i++) {
-        const dot = document.getElementById(`dot-${i}`);
-        dot.classList.toggle('filled', i < pinBuffer.length);
-    }
+    for (let i = 0; i < 4; i++) document.getElementById(`dot-${i}`).classList.toggle('filled', i < pinBuffer.length);
 }
 
 function checkPin() {
     if (pinBuffer === PINS[selectedRoleTemp]) {
         loginAs(selectedRoleTemp);
     } else {
-        // Shake animation
         const dots = document.querySelector('#screen-pin .flex.gap-4');
         dots.style.animation = 'none';
-        dots.offsetHeight; // reflow
+        dots.offsetHeight;
         dots.style.animation = 'shake 0.4s ease';
         setTimeout(() => { dots.style.animation = ''; }, 400);
         pinBuffer = '';
@@ -782,43 +1274,20 @@ function loginAs(role) {
     currentRole = role;
     sessionStorage.setItem('qh_role', role);
     const cfg = PROFILE_CONFIG[role];
-
-    // Set menu
-    if (role === 'arboleda') {
-        activeMenu = JSON.parse(localStorage.getItem('qh_menu_arb_v7')) || DEFAULT_MENU_ARBOLEDA;
-    } else if (role === 'rincon') {
-        activeMenu = JSON.parse(localStorage.getItem('qh_menu_rin_v7')) || DEFAULT_MENU_RINCON;
-    } else {
-        activeMenu = [];
-    }
-
-    // Update header
+    if (role === 'arboleda') activeMenu = JSON.parse(localStorage.getItem('qh_menu_arb_v8')) || DEFAULT_MENU_ARBOLEDA;
+    else if (role === 'rincon') activeMenu = JSON.parse(localStorage.getItem('qh_menu_rin_v8')) || DEFAULT_MENU_RINCON;
+    else activeMenu = [];
     const badge = document.getElementById('header-sede-badge');
     badge.textContent = cfg.label;
     badge.className = `text-xs font-semibold mt-0.5 ${cfg.color}`;
-
-    // Show/hide nav items
     const navAdmin = document.getElementById('nav-admin');
     const btnCierre = document.getElementById('btn-cierre-header');
-    
-    if (role === 'admin') {
-        navAdmin.classList.remove('hidden');
-        navAdmin.style.display = 'flex';
-        btnCierre.classList.add('hidden');
-    } else {
-        navAdmin.classList.add('hidden');
-        navAdmin.style.display = 'none';
-        btnCierre.classList.remove('hidden');
-    }
-
+    if (role === 'admin') { navAdmin.classList.remove('hidden'); navAdmin.style.display = 'flex'; btnCierre.classList.add('hidden'); }
+    else { navAdmin.classList.add('hidden'); navAdmin.style.display = 'none'; btnCierre.classList.remove('hidden'); }
     showScreen('app-wrapper');
     showPage(role === 'admin' ? 'admin' : 'ventas');
-
-    if (role !== 'admin') {
-        renderSalonView();
-    } else {
-        renderAdminDashboard();
-    }
+    if (role !== 'admin') renderSalonView();
+    else { renderAdminDashboard(); renderPaysList(); }
 }
 
 function logout() {
@@ -828,7 +1297,7 @@ function logout() {
     showScreen('screen-login');
 }
 
-// ───────── SCREEN / PAGE NAV ─────────
+// ═══════ SCREEN / PAGE NAV ═══════
 function showScreen(id) {
     ['screen-login','screen-pin','app-wrapper'].forEach(s => {
         const el = document.getElementById(s);
@@ -843,33 +1312,22 @@ function showPage(page) {
         if (el) el.classList.add('hidden');
     });
     document.getElementById(`page-${page}`)?.classList.remove('hidden');
-
-    // Update nav active state
     ['ventas','cierre','admin'].forEach(p => {
         const btn = document.getElementById(`nav-${p}`);
         if (!btn) return;
-        if (p === page) {
-            btn.className = btn.className.replace('text-slate-500','').replace('text-amber-400','') + ' text-amber-400';
-            btn.style.color = '#f59e0b';
-        } else {
-            btn.style.color = '#64748b';
-        }
+        btn.style.color = p === page ? 'var(--accent, #f59e0b)' : '#64748b';
     });
-
     if (page === 'cierre') renderCierre();
-    if (page === 'admin') renderAdminDashboard();
+    if (page === 'admin') { renderAdminDashboard(); renderPaysList(); }
 }
 
-// ───────── SALON / SLOTS ─────────
+// ═══════ SALON / SLOTS ═══════
 function setHubTab(tab) {
     activeHubTab = tab;
     ['mesas','domicilios','llevar'].forEach(t => {
         const btn = document.getElementById(`tab-${t}`);
-        if (t === tab) {
-            btn.className = 'flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-bold border-2 border-amber-500 bg-amber-500 text-white transition';
-        } else {
-            btn.className = 'flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-bold border-2 border-slate-700 text-slate-400 transition';
-        }
+        if (t === tab) btn.className = 'flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-bold border-2 border-amber-500 bg-amber-500 text-white transition';
+        else btn.className = 'flex-shrink-0 px-5 py-3 rounded-2xl text-sm font-bold border-2 border-slate-700 text-slate-400 transition';
     });
     renderSalonView();
 }
@@ -878,65 +1336,54 @@ function renderSalonView() {
     const grid = document.getElementById('slots-grid');
     grid.innerHTML = '';
     const slots = systemTables.filter(t => t.type === activeHubTab);
-
     if (slots.length === 0) {
         grid.innerHTML = '<div class="col-span-2 py-12 text-center text-slate-500"><i class="fa-solid fa-circle-info text-3xl block mb-3"></i><p class="font-semibold">No hay ranuras configuradas</p></div>';
         return;
     }
-
     slots.forEach(slot => {
         const order = tableOrders[slot.name] || [];
         const hasOrder = order.length > 0;
         const total = order.reduce((s,i) => s + i.product.price * i.qty, 0);
-
-        // Determine state class
-        let stateClass = 'bg-slate-800/60 border-slate-700';
-        let dotColor = 'bg-emerald-500';
-        let stateLabel = 'Libre';
-        let stateTextColor = 'text-emerald-400';
-
-        if (hasOrder) {
-            stateClass = 'bg-rose-900/40 border-rose-700/60';
-            dotColor = 'bg-rose-500';
-            stateLabel = 'Ocupada';
-            stateTextColor = 'text-rose-400';
-        }
-
+        const stateClass = hasOrder ? 'bg-rose-900/40 border-rose-700/60' : 'bg-slate-800/60 border-slate-700';
+        const dotColor = hasOrder ? 'bg-rose-500' : 'bg-emerald-500';
+        const stateLabel = hasOrder ? 'Ocupada' : 'Libre';
+        const stateTextColor = hasOrder ? 'text-rose-400' : 'text-emerald-400';
         const icon = activeHubTab === 'mesas' ? '🪑' : activeHubTab === 'domicilios' ? '🛵' : '🛍️';
-
-        const card = document.createElement('button');
-        card.className = `border-2 ${stateClass} rounded-3xl p-5 text-left transition active:scale-95 flex flex-col gap-2`;
-        card.onclick = () => openSlot(slot.name);
+        const card = document.createElement('div');
+        card.className = `border-2 ${stateClass} rounded-3xl p-5 text-left flex flex-col gap-2`;
         card.innerHTML = `
-            <div class="flex items-center justify-between w-full">
-                <span class="text-2xl">${icon}</span>
-                <span class="flex items-center gap-1.5 text-xs font-bold ${stateTextColor}">
-                    <span class="w-2 h-2 rounded-full ${dotColor}"></span>
-                    ${stateLabel}
-                </span>
-            </div>
-            <div>
-                <p class="text-xl font-black text-white">${slot.name}</p>
-                <p class="text-sm font-bold ${hasOrder ? 'text-amber-400' : 'text-slate-600'} mt-0.5">
-                    ${hasOrder ? '$'+total.toLocaleString('es-CO') : '—'}
-                </p>
-                ${hasOrder ? `<p class="text-xs text-slate-500 mt-0.5">${order.length} productos</p>` : ''}
-            </div>
+            <button onclick="openSlot('${slot.name}')" class="w-full text-left flex flex-col gap-2 active:opacity-70 transition">
+                <div class="flex items-center justify-between w-full">
+                    <span class="text-2xl">${icon}</span>
+                    <span class="flex items-center gap-1.5 text-xs font-bold ${stateTextColor}">
+                        <span class="w-2 h-2 rounded-full ${dotColor}"></span>${stateLabel}
+                    </span>
+                </div>
+                <div>
+                    <p class="text-xl font-black text-white">${slot.name}</p>
+                    <p class="text-sm font-bold ${hasOrder ? 'text-amber-500' : 'text-slate-400'} mt-0.5">${hasOrder ? '$'+total.toLocaleString('es-CO') : '—'}</p>
+                    ${hasOrder ? `<p class="text-xs text-slate-500 mt-0.5">${order.length} producto${order.length !== 1 ? 's' : ''}</p>` : ''}
+                </div>
+            </button>
+            ${hasOrder ? `<button onclick="cobrarMesaDirecto('${slot.name}')" class="w-full mt-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-white font-black text-sm rounded-2xl transition flex items-center justify-center gap-2 shadow-sm" style="color:#fff !important;"><i class="fa-solid fa-cash-register"></i> Cobrar</button>` : ''}
         `;
         grid.appendChild(card);
     });
+}
+
+function cobrarMesaDirecto(slotName) {
+    currentSlot = slotName;
+    openPaymentSheet();
 }
 
 function openSlot(slotName) {
     currentSlot = slotName;
     searchQuery = '';
     activeCategory = null;
-
     document.getElementById('salon-view').classList.add('hidden');
     document.getElementById('menu-view').classList.remove('hidden');
     document.getElementById('menu-slot-title').textContent = slotName;
     document.getElementById('search-input').value = '';
-
     renderCategories();
     renderProducts();
     updateCartMini();
@@ -949,20 +1396,16 @@ function goBackToSalon() {
     renderSalonView();
 }
 
-// ───────── MENU ─────────
+// ═══════ MENU ═══════
 function renderCategories() {
     const strip = document.querySelector('#menu-view .flex.gap-2.px-4');
     strip.innerHTML = '';
-
     const categories = [...new Set(activeMenu.map(p => p.category))];
-    
-    // "Todos" pill
     const allPill = document.createElement('button');
     allPill.className = `flex-shrink-0 px-4 py-2.5 rounded-2xl text-sm font-bold border-2 transition cat-pill ${activeCategory === null ? 'cat-pill-active border-amber-500' : 'border-slate-700 text-slate-400 bg-transparent'}`;
     allPill.textContent = 'Todo';
     allPill.onclick = () => { activeCategory = null; renderCategories(); renderProducts(); };
     strip.appendChild(allPill);
-
     categories.forEach(cat => {
         const pill = document.createElement('button');
         pill.className = `flex-shrink-0 px-4 py-2.5 rounded-2xl text-sm font-bold border-2 transition cat-pill ${activeCategory === cat ? 'cat-pill-active border-amber-500' : 'border-slate-700 text-slate-400 bg-transparent'}`;
@@ -972,37 +1415,26 @@ function renderCategories() {
     });
 }
 
-function filterProducts(query) {
-    searchQuery = query;
-    renderProducts();
-}
+function filterProducts(query) { searchQuery = query; renderProducts(); }
 
 function renderProducts() {
     const list = document.getElementById('products-list');
     let filtered = activeMenu;
-
-    if (searchQuery.trim()) {
-        filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
-    }
-    if (activeCategory) {
-        filtered = filtered.filter(p => p.category === activeCategory);
-    }
-
+    if (searchQuery.trim()) filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (activeCategory) filtered = filtered.filter(p => p.category === activeCategory);
     if (filtered.length === 0) {
         list.innerHTML = '<div class="py-12 text-center text-slate-500"><i class="fa-solid fa-magnifying-glass text-3xl block mb-3 text-slate-700"></i><p class="font-semibold">Sin resultados</p></div>';
         return;
     }
-
     list.innerHTML = '';
     filtered.forEach(p => {
         const currentOrder = tableOrders[currentSlot] || [];
         const inCart = currentOrder.find(i => i.product.id === p.id);
         const qty = inCart ? inCart.qty : 0;
-
         const card = document.createElement('div');
         card.className = 'bg-slate-800 border border-slate-700 rounded-2xl p-4 flex items-center gap-4 cart-item';
         card.innerHTML = `
-            <div class="w-12 h-12 flex-shrink-0 bg-slate-700 rounded-xl flex items-center justify-center text-2xl">${p.emoji || '🍔'}</div>
+            <div class="w-12 h-12 flex-shrink-0 bg-slate-700 rounded-xl flex items-center justify-center text-2xl">${p.emoji||'🍔'}</div>
             <div class="flex-1 min-w-0">
                 <p class="text-base font-bold text-white leading-tight">${p.name}</p>
                 <p class="text-amber-400 font-black text-lg mt-0.5">$${p.price.toLocaleString('es-CO')}</p>
@@ -1026,16 +1458,10 @@ function addToCart(productId) {
     if (!currentSlot) return;
     const product = activeMenu.find(p => p.id === productId);
     if (!product) return;
-
     if (!tableOrders[currentSlot]) tableOrders[currentSlot] = [];
     const existing = tableOrders[currentSlot].find(i => i.product.id === productId);
-
-    if (existing) {
-        existing.qty++;
-    } else {
-        tableOrders[currentSlot].push({ product, qty: 1, notes: '' });
-    }
-
+    if (existing) existing.qty++;
+    else tableOrders[currentSlot].push({ product, qty: 1, notes: '' });
     saveOrders();
     renderProducts();
     updateCartMini();
@@ -1046,44 +1472,36 @@ function changeQty(productId, delta) {
     if (!currentSlot || !tableOrders[currentSlot]) return;
     const idx = tableOrders[currentSlot].findIndex(i => i.product.id === productId);
     if (idx === -1) return;
-
     tableOrders[currentSlot][idx].qty += delta;
-    if (tableOrders[currentSlot][idx].qty <= 0) {
-        tableOrders[currentSlot].splice(idx, 1);
-    }
-
+    if (tableOrders[currentSlot][idx].qty <= 0) tableOrders[currentSlot].splice(idx, 1);
     saveOrders();
     renderProducts();
     updateCartMini();
 }
 
 function saveOrders() {
-    localStorage.setItem('qh_orders_v7', JSON.stringify(tableOrders));
+    localStorage.setItem('qh_orders_v8', JSON.stringify(tableOrders));
+    if (fbConnected) {
+        const { ref, set } = window._fbImports;
+        set(ref(fbDb, 'qh/orders'), tableOrders).catch(() => {});
+    }
 }
 
 function updateCartMini() {
     const order = currentSlot ? (tableOrders[currentSlot] || []) : [];
     const total = order.reduce((s,i) => s + i.product.price * i.qty, 0);
     const count = order.reduce((s,i) => s + i.qty, 0);
-
     document.getElementById('cart-total-mini').textContent = '$' + total.toLocaleString('es-CO');
-    
     const badge = document.getElementById('cart-badge');
-    if (count > 0) {
-        badge.classList.remove('hidden');
-        badge.textContent = count;
-    } else {
-        badge.classList.add('hidden');
-    }
+    if (count > 0) { badge.classList.remove('hidden'); badge.textContent = count; }
+    else badge.classList.add('hidden');
 }
 
-// ───────── CART SHEET ─────────
+// ═══════ CART SHEET ═══════
 function openCartSheet() {
     renderCartSheet();
     document.getElementById('cart-backdrop').classList.remove('hidden');
-    requestAnimationFrame(() => {
-        document.getElementById('cart-sheet').classList.add('open');
-    });
+    requestAnimationFrame(() => document.getElementById('cart-sheet').classList.add('open'));
 }
 
 function closeCartSheet() {
@@ -1095,18 +1513,12 @@ function renderCartSheet() {
     const order = currentSlot ? (tableOrders[currentSlot] || []) : [];
     const list = document.getElementById('cart-items-list');
     const total = order.reduce((s,i) => s + i.product.price * i.qty, 0);
-
     document.getElementById('cart-sheet-title').textContent = `Carrito — ${currentSlot || ''}`;
     document.getElementById('cart-grand-total').textContent = '$' + total.toLocaleString('es-CO');
-
     if (order.length === 0) {
-        list.innerHTML = `<div class="py-12 text-center">
-            <i class="fa-solid fa-basket-shopping text-4xl text-slate-700 block mb-3"></i>
-            <p class="text-slate-500 font-semibold">Sin productos todavía</p>
-        </div>`;
+        list.innerHTML = `<div class="py-12 text-center"><i class="fa-solid fa-basket-shopping text-4xl text-slate-700 block mb-3"></i><p class="text-slate-500 font-semibold">Sin productos todavía</p></div>`;
         return;
     }
-
     list.innerHTML = '';
     order.forEach((item, idx) => {
         const itemTotal = item.product.price * item.qty;
@@ -1114,15 +1526,13 @@ function renderCartSheet() {
         div.className = 'bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-3 cart-item';
         div.innerHTML = `
             <div class="flex items-start gap-3">
-                <span class="text-2xl">${item.product.emoji || '🍔'}</span>
+                <span class="text-2xl">${item.product.emoji||'🍔'}</span>
                 <div class="flex-1">
                     <p class="text-white font-bold text-base leading-tight">${item.product.name}</p>
                     <p class="text-amber-400 font-black text-lg">$${itemTotal.toLocaleString('es-CO')}</p>
                     <p class="text-slate-500 text-sm">$${item.product.price.toLocaleString('es-CO')} c/u</p>
                 </div>
-                <button onclick="removeCartItem(${idx})" class="text-rose-400 p-1">
-                    <i class="fa-solid fa-circle-xmark text-xl"></i>
-                </button>
+                <button onclick="removeCartItem(${idx})" class="text-rose-400 p-1"><i class="fa-solid fa-circle-xmark text-xl"></i></button>
             </div>
             <div class="flex items-center gap-3">
                 <input onchange="setNotes(${idx}, this.value)" value="${item.notes||''}" placeholder="Adición o modificación..." type="text"
@@ -1142,19 +1552,13 @@ function changeQtyByIdx(idx, delta) {
     if (!currentSlot || !tableOrders[currentSlot]) return;
     tableOrders[currentSlot][idx].qty += delta;
     if (tableOrders[currentSlot][idx].qty <= 0) tableOrders[currentSlot].splice(idx, 1);
-    saveOrders();
-    updateCartMini();
-    renderCartSheet();
-    renderProducts();
+    saveOrders(); updateCartMini(); renderCartSheet(); renderProducts();
 }
 
 function removeCartItem(idx) {
     if (!currentSlot || !tableOrders[currentSlot]) return;
     tableOrders[currentSlot].splice(idx, 1);
-    saveOrders();
-    updateCartMini();
-    renderCartSheet();
-    renderProducts();
+    saveOrders(); updateCartMini(); renderCartSheet(); renderProducts();
 }
 
 function setNotes(idx, val) {
@@ -1167,10 +1571,7 @@ function setNotes(idx, val) {
 function clearCart() {
     if (!currentSlot) return;
     tableOrders[currentSlot] = [];
-    saveOrders();
-    updateCartMini();
-    renderCartSheet();
-    renderProducts();
+    saveOrders(); updateCartMini(); renderCartSheet(); renderProducts();
 }
 
 function sendComanda() {
@@ -1180,38 +1581,30 @@ function sendComanda() {
     closeCartSheet();
 }
 
-// ───────── PAYMENT SHEET ─────────
+// ═══════ PAYMENT SHEET ═══════
 function openPaymentSheet() {
     const order = currentSlot ? (tableOrders[currentSlot] || []) : [];
     if (order.length === 0) { showToast('El carrito está vacío', 'error'); return; }
-
     const total = order.reduce((s,i) => s + i.product.price * i.qty, 0);
-    
     document.getElementById('pay-slot-name').textContent = currentSlot || '';
     document.getElementById('pay-total-display').textContent = '$' + total.toLocaleString('es-CO');
-
-    // Render payment methods
     const grid = document.getElementById('pay-methods-grid');
     grid.innerHTML = '';
     systemPayMethods.forEach(m => {
-        const icons = { 'Efectivo': '💵', 'Nequi/Daviplata': '📱', 'Tarjeta': '💳' };
+        const name = typeof m === 'string' ? m : m.name;
+        const emoji = typeof m === 'string' ? (m === 'Efectivo' ? '💵' : m === 'Tarjeta' ? '💳' : '📱') : (m.emoji || '💰');
         const btn = document.createElement('button');
-        btn.id = `pay-btn-${m}`;
-        btn.onclick = () => selectPayMethod(m);
-        const isActive = selectedPayMethod === m;
+        btn.id = `pay-btn-${name}`;
+        btn.onclick = () => selectPayMethod(name);
+        const isActive = selectedPayMethod === name;
         btn.className = `w-full py-4 rounded-2xl border-2 text-base font-bold transition flex items-center gap-3 px-5 ${isActive ? 'border-amber-500 bg-amber-500/20 text-white' : 'border-slate-700 bg-slate-800 text-slate-400'}`;
-        btn.innerHTML = `<span class="text-2xl">${icons[m] || '💰'}</span>${m}`;
+        btn.innerHTML = `<span class="text-2xl">${emoji}</span>${name}`;
         grid.appendChild(btn);
     });
-
-    // Cash presets
     renderCashPresets(total);
     selectPayMethod(selectedPayMethod);
-
     document.getElementById('pay-backdrop').classList.remove('hidden');
-    requestAnimationFrame(() => {
-        document.getElementById('pay-sheet').classList.add('open');
-    });
+    requestAnimationFrame(() => document.getElementById('pay-sheet').classList.add('open'));
 }
 
 function closePaymentSheet() {
@@ -1222,13 +1615,13 @@ function closePaymentSheet() {
 function selectPayMethod(method) {
     selectedPayMethod = method;
     systemPayMethods.forEach(m => {
-        const btn = document.getElementById(`pay-btn-${m}`);
+        const name = typeof m === 'string' ? m : m.name;
+        const btn = document.getElementById(`pay-btn-${name}`);
         if (!btn) return;
-        const isActive = m === method;
+        const isActive = name === method;
         btn.className = `w-full py-4 rounded-2xl border-2 text-base font-bold transition flex items-center gap-3 px-5 ${isActive ? 'border-amber-500 bg-amber-500/20 text-white' : 'border-slate-700 bg-slate-800 text-slate-400'}`;
     });
-    const cashHelper = document.getElementById('cash-helper');
-    cashHelper.classList.toggle('hidden', method !== 'Efectivo');
+    document.getElementById('cash-helper').classList.toggle('hidden', method !== 'Efectivo');
 }
 
 function renderCashPresets(total) {
@@ -1240,10 +1633,7 @@ function renderCashPresets(total) {
         const btn = document.createElement('button');
         btn.className = 'py-3 bg-slate-800 border border-slate-700 hover:border-amber-500 rounded-xl text-sm font-bold text-white transition active:scale-95';
         btn.textContent = amt === total ? 'Exacto' : '$' + (amt/1000).toFixed(0) + 'k';
-        btn.onclick = () => {
-            document.getElementById('cash-given-input').value = amt;
-            calcChange(amt);
-        };
+        btn.onclick = () => { document.getElementById('cash-given-input').value = amt; calcChange(amt); };
         container.appendChild(btn);
     });
 }
@@ -1261,17 +1651,13 @@ function calcChange(val) {
 function processPayment() {
     const order = currentSlot ? (tableOrders[currentSlot] || []) : [];
     if (order.length === 0) return;
-
     const total = order.reduce((s,i) => s + i.product.price * i.qty, 0);
-
     if (selectedPayMethod === 'Efectivo') {
         const given = parseFloat(document.getElementById('cash-given-input').value) || 0;
         if (given < total) { showToast('El monto entregado es insuficiente', 'error'); return; }
     }
-
     const cashGiven = selectedPayMethod === 'Efectivo' ? (parseFloat(document.getElementById('cash-given-input').value) || total) : total;
     const cashChange = selectedPayMethod === 'Efectivo' ? cashGiven - total : 0;
-
     const invoice = {
         id: 'POS-' + String(salesHistory.length + 1).padStart(4, '0'),
         datetime: `${getDateStr(0)}, ${new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'})}`,
@@ -1280,18 +1666,20 @@ function processPayment() {
         sedeName: currentRole === 'arboleda' ? 'Arboleda' : 'Rincón',
         tableName: currentSlot,
         paymentMethod: selectedPayMethod,
-        total,
-        cashGiven,
-        cashChange,
+        total, cashGiven, cashChange,
         items: order.map(i => ({ name: i.product.name, price: i.product.price, qty: i.qty, notes: i.notes }))
     };
-
     salesHistory.push(invoice);
-    localStorage.setItem('qh_sales_v7', JSON.stringify(salesHistory));
-
+    localStorage.setItem('qh_sales_v8', JSON.stringify(salesHistory));
+    // Sync sale to Firebase
+    if (fbConnected) {
+        const { ref, set } = window._fbImports;
+        const salesObj = {};
+        salesHistory.forEach((s, i) => { salesObj['sale_' + i] = s; });
+        set(ref(fbDb, 'qh/sales'), salesObj).catch(() => {});
+    }
     tableOrders[currentSlot] = [];
     saveOrders();
-
     closePaymentSheet();
     closeCartSheet();
     showReceipt(invoice);
@@ -1299,7 +1687,7 @@ function processPayment() {
     updateCartMini();
 }
 
-// ───────── RECEIPT ─────────
+// ═══════ RECEIPT ═══════
 function showReceipt(invoice) {
     document.getElementById('rec-sede').textContent = invoice.sedeName;
     document.getElementById('rec-datetime').textContent = invoice.datetime;
@@ -1308,76 +1696,55 @@ function showReceipt(invoice) {
     document.getElementById('rec-method').textContent = invoice.paymentMethod;
     document.getElementById('rec-given').textContent = '$' + invoice.cashGiven.toLocaleString('es-CO');
     document.getElementById('rec-change').textContent = '$' + invoice.cashChange.toLocaleString('es-CO');
-
     const itemsEl = document.getElementById('rec-items');
     itemsEl.innerHTML = '';
     invoice.items.forEach(i => {
         const row = document.createElement('div');
         row.className = 'flex justify-between py-1 border-b border-slate-100';
-        row.innerHTML = `
-            <span class="text-slate-700 font-medium">${i.qty}× ${i.name}${i.notes ? '<br><small class="text-slate-400 italic">'+i.notes+'</small>' : ''}</span>
-            <span class="font-bold text-slate-900">$${(i.price*i.qty).toLocaleString('es-CO')}</span>
-        `;
+        row.innerHTML = `<span class="text-slate-700 font-medium">${i.qty}× ${i.name}${i.notes ? '<br><small class="text-slate-400 italic">'+i.notes+'</small>' : ''}</span><span class="font-bold text-slate-900">$${(i.price*i.qty).toLocaleString('es-CO')}</span>`;
         itemsEl.appendChild(row);
     });
-
     document.getElementById('receipt-modal').classList.remove('hidden');
     if (currentSlot) goBackToSalon();
 }
 
-function closeReceipt() {
-    document.getElementById('receipt-modal').classList.add('hidden');
-}
+function closeReceipt() { document.getElementById('receipt-modal').classList.add('hidden'); }
 
-// ───────── CIERRE / ARQUEO ─────────
+// ═══════ CIERRE ═══════
 function renderCierre() {
     const role = currentRole;
     const sedeId = role === 'arboleda' ? 1 : 2;
     const sedeName = role === 'arboleda' ? 'Arboleda (Food Trailer)' : 'Rincón de Piedra (Local)';
     const today = getDateStr(0);
-
     document.getElementById('cierre-sede-label').textContent = sedeName;
-
     const todaySales = salesHistory.filter(s => s.rawDate === today && s.sedeId === sedeId);
     const total = todaySales.reduce((s,v) => s + v.total, 0);
-
     document.getElementById('cierre-total-dia').textContent = '$' + total.toLocaleString('es-CO');
     document.getElementById('cierre-facturas-count').textContent = todaySales.length + ' transacciones hoy';
-
-    // Pay breakdown
     const breakdown = {};
-    systemPayMethods.forEach(m => breakdown[m] = 0);
+    systemPayMethods.forEach(m => { const n = typeof m === 'string' ? m : m.name; breakdown[n] = 0; });
     let efectivoEsperado = 0;
     todaySales.forEach(s => {
         breakdown[s.paymentMethod] = (breakdown[s.paymentMethod] || 0) + s.total;
         if (s.paymentMethod === 'Efectivo') efectivoEsperado += s.total;
     });
-
     const container = document.getElementById('cierre-pay-breakdown');
     container.innerHTML = '';
-    const icons = { 'Efectivo': '💵', 'Nequi/Daviplata': '📱', 'Tarjeta': '💳' };
     Object.keys(breakdown).forEach(m => {
+        const payObj = systemPayMethods.find(p => (typeof p === 'string' ? p : p.name) === m);
+        const emoji = payObj ? (typeof payObj === 'string' ? '💰' : payObj.emoji || '💰') : '💰';
         const div = document.createElement('div');
         div.className = 'flex items-center justify-between bg-slate-700 rounded-2xl px-4 py-4';
-        div.innerHTML = `
-            <div class="flex items-center gap-3">
-                <span class="text-2xl">${icons[m] || '💰'}</span>
-                <span class="text-white font-bold text-base">${m}</span>
-            </div>
-            <span class="text-xl font-black text-amber-400">$${(breakdown[m]||0).toLocaleString('es-CO')}</span>
-        `;
+        div.innerHTML = `<div class="flex items-center gap-3"><span class="text-2xl">${emoji}</span><span class="text-white font-bold text-base">${m}</span></div><span class="text-xl font-black text-amber-400">$${(breakdown[m]||0).toLocaleString('es-CO')}</span>`;
         container.appendChild(div);
     });
-
     document.getElementById('cierre-efectivo-esperado').textContent = '$' + efectivoEsperado.toLocaleString('es-CO');
     document.getElementById('cierre-efectivo-real').value = '';
     document.getElementById('cierre-diff-display').textContent = '—';
     document.getElementById('cierre-diff-display').className = 'text-xl font-black text-slate-400';
 }
 
-function openCierreModal() {
-    showPage('cierre');
-}
+function openCierreModal() { showPage('cierre'); }
 
 function calcCierreDiff(val) {
     const real = parseFloat(val) || 0;
@@ -1385,118 +1752,70 @@ function calcCierreDiff(val) {
     const expected = parseFloat(expectedText) || 0;
     const diff = real - expected;
     const display = document.getElementById('cierre-diff-display');
-    if (diff === 0) {
-        display.textContent = '$0 — Cuadrado ✅';
-        display.className = 'text-xl font-black text-emerald-400';
-    } else if (diff < 0) {
-        display.textContent = `-$${Math.abs(diff).toLocaleString('es-CO')} — Faltante ⚠️`;
-        display.className = 'text-xl font-black text-rose-400';
-    } else {
-        display.textContent = `+$${diff.toLocaleString('es-CO')} — Sobrante`;
-        display.className = 'text-xl font-black text-amber-400';
-    }
+    if (diff === 0) { display.textContent = '$0 — Cuadrado ✅'; display.className = 'text-xl font-black text-emerald-400'; }
+    else if (diff < 0) { display.textContent = `-$${Math.abs(diff).toLocaleString('es-CO')} — Faltante ⚠️`; display.className = 'text-xl font-black text-rose-400'; }
+    else { display.textContent = `+$${diff.toLocaleString('es-CO')} — Sobrante`; display.className = 'text-xl font-black text-amber-400'; }
 }
 
-function ejecutarArqueo() {
-    showToast('✅ Arqueo ejecutado correctamente', 'success');
-    setTimeout(logout, 1500);
-}
+function ejecutarArqueo() { showToast('✅ Arqueo ejecutado correctamente', 'success'); setTimeout(logout, 1500); }
 
-// ───────── ADMIN DASHBOARD ─────────
+// ═══════ ADMIN DASHBOARD ═══════
 function adminFilter(filter) {
     activeAdminFilter = filter;
     ['today','yesterday','week','all'].forEach(f => {
         const btn = document.getElementById(`af-${f}`);
         if (!btn) return;
-        btn.className = f === filter
-            ? 'py-3 rounded-2xl text-sm font-bold bg-amber-500 text-white transition'
-            : 'py-3 rounded-2xl text-sm font-bold bg-slate-700 text-slate-300 transition';
+        btn.className = f === filter ? 'py-3 rounded-2xl text-sm font-bold bg-amber-500 text-white transition' : 'py-3 rounded-2xl text-sm font-bold bg-slate-700 text-slate-300 transition';
     });
     renderAdminDashboard();
 }
 
 function renderAdminDashboard() {
     const sedeFilter = document.getElementById('admin-sede-filter')?.value || 'all';
-    const today = getDateStr(0);
-    const yesterday = getDateStr(1);
+    const today = getDateStr(0), yesterday = getDateStr(1);
     const last7 = Array.from({length:7}, (_,i) => getDateStr(i));
-
-    let filtered = [...salesHistory];
-    let periodoLabel = 'Hoy';
-
-    if (activeAdminFilter === 'today') {
-        filtered = filtered.filter(v => v.rawDate === today);
-        periodoLabel = `Hoy (${today})`;
-    } else if (activeAdminFilter === 'yesterday') {
-        filtered = filtered.filter(v => v.rawDate === yesterday);
-        periodoLabel = `Ayer (${yesterday})`;
-    } else if (activeAdminFilter === 'week') {
-        filtered = filtered.filter(v => last7.includes(v.rawDate));
-        periodoLabel = 'Últimos 7 días';
-    } else {
-        periodoLabel = 'Histórico completo';
-    }
-
-    if (sedeFilter !== 'all') {
-        filtered = filtered.filter(v => v.sedeId === parseInt(sedeFilter));
-    }
-
+    let filtered = [...salesHistory], periodoLabel = 'Hoy';
+    if (activeAdminFilter === 'today') { filtered = filtered.filter(v => v.rawDate === today); periodoLabel = `Hoy (${today})`; }
+    else if (activeAdminFilter === 'yesterday') { filtered = filtered.filter(v => v.rawDate === yesterday); periodoLabel = `Ayer (${yesterday})`; }
+    else if (activeAdminFilter === 'week') { filtered = filtered.filter(v => last7.includes(v.rawDate)); periodoLabel = 'Últimos 7 días'; }
+    else periodoLabel = 'Histórico completo';
+    if (sedeFilter !== 'all') filtered = filtered.filter(v => v.sedeId === parseInt(sedeFilter));
     const total = filtered.reduce((s,v) => s + v.total, 0);
     const arb = filtered.filter(v => v.sedeId===1).reduce((s,v) => s + v.total, 0);
     const rin = filtered.filter(v => v.sedeId===2).reduce((s,v) => s + v.total, 0);
     const avg = filtered.length > 0 ? Math.round(total / filtered.length) : 0;
-
     document.getElementById('admin-stat-total').textContent = '$' + total.toLocaleString('es-CO');
     document.getElementById('admin-stat-periodo').textContent = periodoLabel;
     document.getElementById('admin-arboleda-total').textContent = '$' + arb.toLocaleString('es-CO');
     document.getElementById('admin-rincon-total').textContent = '$' + rin.toLocaleString('es-CO');
     document.getElementById('admin-invoice-count').textContent = filtered.length;
     document.getElementById('admin-avg-ticket').textContent = '$' + avg.toLocaleString('es-CO');
-
-    // Pay breakdown
     const breakdown = {};
-    systemPayMethods.forEach(m => breakdown[m] = 0);
+    systemPayMethods.forEach(m => { const n = typeof m === 'string' ? m : m.name; breakdown[n] = 0; });
     filtered.forEach(v => { breakdown[v.paymentMethod] = (breakdown[v.paymentMethod] || 0) + v.total; });
-
     const payContainer = document.getElementById('admin-pay-breakdown');
     payContainer.innerHTML = '';
-    const icons = { 'Efectivo': '💵', 'Nequi/Daviplata': '📱', 'Tarjeta': '💳' };
     Object.keys(breakdown).forEach(m => {
+        const payObj = systemPayMethods.find(p => (typeof p === 'string' ? p : p.name) === m);
+        const emoji = payObj ? (typeof payObj === 'string' ? '💰' : payObj.emoji || '💰') : '💰';
         const div = document.createElement('div');
         div.className = 'flex items-center justify-between bg-slate-700 rounded-2xl px-4 py-3';
-        div.innerHTML = `
-            <div class="flex items-center gap-2">
-                <span class="text-xl">${icons[m]||'💰'}</span>
-                <span class="text-slate-300 font-bold text-sm">${m}</span>
-            </div>
-            <span class="text-lg font-black text-white">$${(breakdown[m]||0).toLocaleString('es-CO')}</span>
-        `;
+        div.innerHTML = `<div class="flex items-center gap-2"><span class="text-xl">${emoji}</span><span class="text-slate-300 font-bold text-sm">${m}</span></div><span class="text-lg font-black text-white">$${(breakdown[m]||0).toLocaleString('es-CO')}</span>`;
         payContainer.appendChild(div);
     });
-
-    // History
     const histContainer = document.getElementById('admin-history-list');
     const sorted = [...filtered].reverse();
-    if (sorted.length === 0) {
-        histContainer.innerHTML = '<p class="text-center text-slate-600 py-6 font-semibold">Sin ventas en este período</p>';
-        return;
+    if (sorted.length === 0) { histContainer.innerHTML = '<p class="text-center text-slate-600 py-6 font-semibold">Sin ventas en este período</p>'; }
+    else {
+        histContainer.innerHTML = '';
+        sorted.slice(0, 20).forEach(inv => {
+            const div = document.createElement('div');
+            const sedeColor = inv.sedeId === 1 ? 'text-teal-400' : 'text-rose-400';
+            div.className = 'bg-slate-700 rounded-2xl p-4 flex items-center justify-between';
+            div.innerHTML = `<div><p class="text-white font-bold text-sm">${inv.id} · ${inv.tableName}</p><p class="text-slate-400 text-xs mt-0.5">${inv.datetime} · <span class="${sedeColor} font-bold">${inv.sedeName}</span></p><p class="text-slate-500 text-xs mt-0.5">${inv.paymentMethod}</p></div><p class="text-amber-400 font-black text-lg">$${inv.total.toLocaleString('es-CO')}</p>`;
+            histContainer.appendChild(div);
+        });
     }
-    histContainer.innerHTML = '';
-    sorted.slice(0, 20).forEach(inv => {
-        const div = document.createElement('div');
-        const sedeColor = inv.sedeId === 1 ? 'text-teal-400' : 'text-rose-400';
-        div.className = 'bg-slate-700 rounded-2xl p-4 flex items-center justify-between';
-        div.innerHTML = `
-            <div>
-                <p class="text-white font-bold text-sm">${inv.id} · ${inv.tableName}</p>
-                <p class="text-slate-400 text-xs mt-0.5">${inv.datetime} · <span class="${sedeColor} font-bold">${inv.sedeName}</span></p>
-                <p class="text-slate-500 text-xs mt-0.5">${inv.paymentMethod}</p>
-            </div>
-            <p class="text-amber-400 font-black text-lg">$${inv.total.toLocaleString('es-CO')}</p>
-        `;
-        histContainer.appendChild(div);
-    });
-
     // Tables list
     const tablesList = document.getElementById('tables-list');
     if (tablesList) {
@@ -1505,16 +1824,121 @@ function renderAdminDashboard() {
             const row = document.createElement('div');
             row.className = 'flex items-center justify-between bg-slate-700 rounded-xl px-4 py-3';
             const icon = t.type === 'mesas' ? '🪑' : t.type === 'domicilios' ? '🛵' : '🛍️';
-            row.innerHTML = `
-                <span class="text-white font-medium text-sm">${icon} ${t.name}</span>
-                <button onclick="deleteTable(${idx})" class="text-rose-400 hover:text-rose-300 p-1"><i class="fa-solid fa-trash-can text-sm"></i></button>
-            `;
+            row.innerHTML = `<span class="text-white font-medium text-sm">${icon} ${t.name}</span><button onclick="deleteTable(${idx})" class="text-rose-400 hover:text-rose-300 p-1"><i class="fa-solid fa-trash-can text-sm"></i></button>`;
             tablesList.appendChild(row);
         });
     }
 }
 
-// ───────── CONFIG: DISH & TABLE ─────────
+// ═══════ DISH LIST & EDIT ═══════
+function renderDishesList() {
+    const sedeFilter = document.getElementById('menu-sede-filter');
+    if (!sedeFilter) return;
+    const sede = sedeFilter.value;
+    const storageKey = sede === 'arboleda' ? 'qh_menu_arb_v8' : 'qh_menu_rin_v8';
+    const defaultMenu = sede === 'arboleda' ? DEFAULT_MENU_ARBOLEDA : DEFAULT_MENU_RINCON;
+    const menu = JSON.parse(localStorage.getItem(storageKey)) || defaultMenu;
+    const container = document.getElementById('dishes-list');
+    if (!container) return;
+    container.innerHTML = '';
+    if (menu.length === 0) {
+        container.innerHTML = '<p class="text-center text-slate-500 text-sm py-4 font-semibold">Sin platos en esta sede</p>';
+        return;
+    }
+    // Group by category
+    const byCategory = {};
+    menu.forEach(d => {
+        if (!byCategory[d.category]) byCategory[d.category] = [];
+        byCategory[d.category].push(d);
+    });
+    Object.keys(byCategory).forEach(cat => {
+        const catLabel = document.createElement('p');
+        catLabel.className = 'text-xs font-black text-amber-500 uppercase tracking-wider pt-2 pb-1';
+        catLabel.textContent = cat;
+        container.appendChild(catLabel);
+        byCategory[cat].forEach(dish => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-3 bg-slate-700 rounded-xl px-3 py-2.5';
+            row.innerHTML = `
+                <span class="text-xl flex-shrink-0">${dish.emoji || '🍔'}</span>
+                <div class="flex-1 min-w-0">
+                    <p class="text-white font-bold text-sm truncate">${dish.name}</p>
+                    <p class="text-amber-400 text-xs font-bold">$${dish.price.toLocaleString('es-CO')}</p>
+                </div>
+                <button onclick="openEditDishModal('${dish.id}','${sede}')" class="w-9 h-9 bg-blue-600 hover:bg-blue-500 text-white rounded-xl flex items-center justify-center transition active:scale-90 flex-shrink-0">
+                    <i class="fa-solid fa-pen text-xs"></i>
+                </button>
+                <button onclick="deleteDish('${dish.id}','${sede}')" class="w-9 h-9 bg-rose-600 hover:bg-rose-500 text-white rounded-xl flex items-center justify-center transition active:scale-90 flex-shrink-0">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
+            `;
+            container.appendChild(row);
+        });
+    });
+}
+
+function openEditDishModal(dishId, sede) {
+    const storageKey = sede === 'arboleda' ? 'qh_menu_arb_v8' : 'qh_menu_rin_v8';
+    const defaultMenu = sede === 'arboleda' ? DEFAULT_MENU_ARBOLEDA : DEFAULT_MENU_RINCON;
+    const menu = JSON.parse(localStorage.getItem(storageKey)) || defaultMenu;
+    const dish = menu.find(d => d.id === dishId);
+    if (!dish) return;
+    document.getElementById('edit-dish-id').value = dish.id;
+    document.getElementById('edit-dish-sede').value = sede;
+    document.getElementById('edit-emoji').value = dish.emoji || '🍔';
+    document.getElementById('edit-category').value = dish.category || '';
+    document.getElementById('edit-name').value = dish.name || '';
+    document.getElementById('edit-price').value = dish.price || '';
+    document.getElementById('edit-desc').value = dish.description || '';
+    document.getElementById('edit-dish-modal').classList.remove('hidden');
+}
+
+function closeEditDishModal() {
+    document.getElementById('edit-dish-modal').classList.add('hidden');
+}
+
+function saveEditDish() {
+    const dishId = document.getElementById('edit-dish-id').value;
+    const sede = document.getElementById('edit-dish-sede').value;
+    const emoji = document.getElementById('edit-emoji').value.trim() || '🍔';
+    const category = document.getElementById('edit-category').value.trim();
+    const name = document.getElementById('edit-name').value.trim();
+    const price = parseInt(document.getElementById('edit-price').value) || 0;
+    const description = document.getElementById('edit-desc').value.trim();
+    if (!name || !price || !category) { showToast('Completa todos los campos', 'error'); return; }
+    const storageKey = sede === 'arboleda' ? 'qh_menu_arb_v8' : 'qh_menu_rin_v8';
+    const defaultMenu = sede === 'arboleda' ? DEFAULT_MENU_ARBOLEDA : DEFAULT_MENU_RINCON;
+    const menu = JSON.parse(localStorage.getItem(storageKey)) || defaultMenu;
+    const idx = menu.findIndex(d => d.id === dishId);
+    if (idx === -1) { showToast('Plato no encontrado', 'error'); return; }
+    menu[idx] = { ...menu[idx], emoji, category, name, price, description };
+    localStorage.setItem(storageKey, JSON.stringify(menu));
+    // Update activeMenu if this sede is active
+    if ((sede === 'arboleda' && currentRole === 'arboleda') || (sede === 'rincon' && currentRole === 'rincon')) {
+        activeMenu = menu;
+    }
+    closeEditDishModal();
+    renderDishesList();
+    showToast('✅ Plato actualizado', 'success');
+    if (fbConnected) syncToFirebase();
+}
+
+function deleteDish(dishId, sede) {
+    if (!confirm('¿Eliminar este plato del menú?')) return;
+    const storageKey = sede === 'arboleda' ? 'qh_menu_arb_v8' : 'qh_menu_rin_v8';
+    const defaultMenu = sede === 'arboleda' ? DEFAULT_MENU_ARBOLEDA : DEFAULT_MENU_RINCON;
+    const menu = JSON.parse(localStorage.getItem(storageKey)) || defaultMenu;
+    const filtered = menu.filter(d => d.id !== dishId);
+    localStorage.setItem(storageKey, JSON.stringify(filtered));
+    if ((sede === 'arboleda' && currentRole === 'arboleda') || (sede === 'rincon' && currentRole === 'rincon')) {
+        activeMenu = filtered;
+    }
+    renderDishesList();
+    showToast('Plato eliminado', 'info');
+    if (fbConnected) syncToFirebase();
+}
+
+// ═══════ CONFIG: DISH & TABLE ═══════
 function saveDish() {
     const emoji = document.getElementById('cfg-emoji').value.trim() || '🍔';
     const category = document.getElementById('cfg-category').value.trim();
@@ -1522,41 +1946,39 @@ function saveDish() {
     const price = parseInt(document.getElementById('cfg-price').value) || 0;
     const desc = document.getElementById('cfg-desc').value.trim();
     const sedeTarget = document.getElementById('cfg-sede').value;
-
     if (!name || !price || !category) { showToast('Completa todos los campos', 'error'); return; }
-
     const dish = { id: 'CFG-' + Date.now(), name, price, category, emoji, description: desc };
-
     if (sedeTarget === 'arboleda' || sedeTarget === 'both') {
-        const menu = JSON.parse(localStorage.getItem('qh_menu_arb_v7')) || DEFAULT_MENU_ARBOLEDA;
+        const menu = JSON.parse(localStorage.getItem('qh_menu_arb_v8')) || DEFAULT_MENU_ARBOLEDA;
         menu.push(dish);
-        localStorage.setItem('qh_menu_arb_v7', JSON.stringify(menu));
+        localStorage.setItem('qh_menu_arb_v8', JSON.stringify(menu));
     }
     if (sedeTarget === 'rincon' || sedeTarget === 'both') {
-        const menu = JSON.parse(localStorage.getItem('qh_menu_rin_v7')) || DEFAULT_MENU_RINCON;
+        const menu = JSON.parse(localStorage.getItem('qh_menu_rin_v8')) || DEFAULT_MENU_RINCON;
         menu.push(dish);
-        localStorage.setItem('qh_menu_rin_v7', JSON.stringify(menu));
+        localStorage.setItem('qh_menu_rin_v8', JSON.stringify(menu));
     }
-
     document.getElementById('cfg-name').value = '';
     document.getElementById('cfg-price').value = '';
     document.getElementById('cfg-desc').value = '';
     document.getElementById('cfg-category').value = '';
     showToast('✅ Plato guardado correctamente', 'success');
+    renderDishesList();
+    if (fbConnected) syncToFirebase();
 }
 
 function saveTable() {
     const name = document.getElementById('cfg-table-name').value.trim();
     const type = document.getElementById('cfg-table-type').value;
     if (!name) { showToast('Ingresa un nombre para la ranura', 'error'); return; }
-    const exists = systemTables.find(t => t.name.toLowerCase() === name.toLowerCase());
-    if (exists) { showToast('Ya existe una ranura con ese nombre', 'error'); return; }
+    if (systemTables.find(t => t.name.toLowerCase() === name.toLowerCase())) { showToast('Ya existe una ranura con ese nombre', 'error'); return; }
     systemTables.push({ name, type });
     tableOrders[name] = [];
-    localStorage.setItem('qh_tables_v7', JSON.stringify(systemTables));
+    localStorage.setItem('qh_tables_v8', JSON.stringify(systemTables));
     document.getElementById('cfg-table-name').value = '';
     showToast('✅ Ranura agregada', 'success');
     renderAdminDashboard();
+    if (fbConnected) syncToFirebase();
 }
 
 function deleteTable(idx) {
@@ -1564,58 +1986,48 @@ function deleteTable(idx) {
     if (t) {
         systemTables.splice(idx, 1);
         delete tableOrders[t.name];
-        localStorage.setItem('qh_tables_v7', JSON.stringify(systemTables));
+        localStorage.setItem('qh_tables_v8', JSON.stringify(systemTables));
         saveOrders();
         showToast('Ranura eliminada', 'success');
         renderAdminDashboard();
+        if (fbConnected) syncToFirebase();
     }
 }
 
-// ───────── CSV EXPORT ─────────
+// ═══════ CSV EXPORT ═══════
 function exportCSV() {
     if (!salesHistory.length) { showToast('Sin datos para exportar', 'error'); return; }
     let csv = "data:text/csv;charset=utf-8,Factura,Sede,Mesa,Fecha,Metodo,Total\n";
     salesHistory.forEach(v => { csv += `"${v.id}","${v.sedeName}","${v.tableName}","${v.datetime}","${v.paymentMethod}",${v.total}\n`; });
     const link = document.createElement('a');
     link.setAttribute('href', encodeURI(csv));
-    link.setAttribute('download', `Ventas_QuillaHouse_${getDateStr(0).replace(/\//g,'-')}.csv`);
+    link.setAttribute('download', `Ventas_${(appAppearance.brandName || 'QuillaHouse').replace(/\s+/g,'')}_${getDateStr(0).replace(/\//g,'-')}.csv`);
     document.body.appendChild(link);
     link.click();
     link.remove();
     showToast('Reporte descargado ✅', 'success');
 }
 
-// ───────── TOAST ─────────
+// ═══════ TOAST ═══════
 function showToast(msg, type = 'success') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
-    const colors = {
-        success: 'bg-emerald-600 text-white',
-        error: 'bg-rose-600 text-white',
-        info: 'bg-slate-700 text-white'
-    };
+    const colors = { success: 'bg-emerald-600 text-white', error: 'bg-rose-600 text-white', info: 'bg-slate-700 text-white' };
     toast.className = `px-5 py-3 rounded-2xl text-sm font-bold shadow-2xl pointer-events-auto ${colors[type] || colors.info} flex items-center gap-2`;
     toast.style.cssText = 'opacity:0; transform:translateY(10px); transition:all 0.2s ease;';
     toast.textContent = msg;
     container.appendChild(toast);
-    requestAnimationFrame(() => {
-        toast.style.opacity = '1';
-        toast.style.transform = 'translateY(0)';
-    });
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(10px)';
-        setTimeout(() => toast.remove(), 200);
-    }, 2500);
+    requestAnimationFrame(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; });
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(10px)'; setTimeout(() => toast.remove(), 200); }, 2500);
 }
 
-// ───────── PIN SHAKE ANIMATION ─────────
+// Shake animation
 const shakeStyle = document.createElement('style');
 shakeStyle.textContent = `@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-10px)} 40%{transform:translateX(10px)} 60%{transform:translateX(-8px)} 80%{transform:translateX(8px)} }`;
 document.head.appendChild(shakeStyle);
 
-// ───────── BOOT ─────────
 window.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
+
